@@ -16,11 +16,11 @@ The left table corresponds to a sequence of chords that can be added to by copyi
 The sequence can then be saved to a text file (\*.chord) and loaded later from the File menu.
 
 Controls for both tables are similar:
-LCLICK:			Play a note or chord
-RCLICK:			Select/deselect a note, or delete a chord
-SHIFT+LCLICK:	Copy a chord
-SHIFT-RCLICK:	Paste a chord (into chord sequence or input column)
-CTRL-RIGHT-CLICK: Insert a chord into chord sequence
+- LCLICK:			Play a note or chord
+- RCLICK:			Select/deselect a note, or delete a chord
+- SHIFT+LCLICK:	Copy a chord
+- SHIFT-RCLICK:	Paste a chord (into chord sequence or input column)
+- CTRL-RIGHT-CLICK: Insert a chord into chord sequence
 
 When you play a note or chord, the program uses the currently loaded soundfont to synthesize the sound.
 Notes played ontiue to play until a new note or chord is played (or, if you "play" an empty cell to stop them).
