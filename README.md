@@ -20,7 +20,7 @@ Controls for both tables are similar:
 - RCLICK:			Select/deselect a note, or delete a chord
 - SHIFT+LCLICK:	Copy a chord
 - SHIFT-RCLICK:	Paste a chord (into chord sequence or input column)
-- CTRL-RIGHT-CLICK: Insert a chord into chord sequence
+- CTRL-SHIFT-RCLICK: Insert a chord into chord sequence
 
 When you play a note or chord, the program uses the currently loaded soundfont to synthesize the sound.
 Notes played ontiue to play until a new note or chord is played (or, if you "play" an empty cell to stop them).
