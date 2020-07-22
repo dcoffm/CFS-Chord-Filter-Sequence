@@ -7,12 +7,6 @@
 
 #include "wxGLMain.h"
 
-#ifndef EVT_THREAD_UPDATE
-#define EVT_THREAD_UPDATE
-DEFINE_EVENT_TYPE(wxEVT_THREAD_UPDATE)
-DEFINE_EVENT_TYPE(wxEVT_THREAD_BUFFER)
-#endif // EVT_THREAD_UPDATE
-
 const long wxGLFrame::ID_buttonLoadSF = wxNewId();
 const long wxGLFrame::ID_choicePreset = wxNewId();
 const long wxGLFrame::ID_checkboxKill = wxNewId();
@@ -47,8 +41,6 @@ END_EVENT_TABLE()
 wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     : wxFrame(frame, -1, title,wxPoint(0,0)){
     //: wxFrame(frame, -1, title,wxDefaultPosition){
-
-    bufferMutex = new wxMutex();
 
     wxSize sz; // Generic size object for various uses
     wxGridBagSizer* mainGrid = new wxGridBagSizer(5,5); // Grid containing control menu and openGL window
@@ -148,8 +140,6 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     Layout();
     SetMinSize(mainGrid->Fit(this));
     SetSize(1700,1000);
-    Connect(wxID_ANY,wxEVT_THREAD_UPDATE,(wxObjectEventFunction)&wxGLFrame::OnThreadUpdate);
-    Connect(wxID_ANY,wxEVT_THREAD_BUFFER,(wxObjectEventFunction)&wxGLFrame::OnThreadBuffer);
 }
 
 wxGLFrame::~wxGLFrame(){ }
@@ -159,10 +149,6 @@ void wxGLFrame::OnQuit(wxCommandEvent &event){
     delete_fluid_player(player);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
-    if(GetThread() && GetThread()->IsRunning()){
-        infoPrint("Waiting on thread to finish.");
-        GetThread()->Wait(); // Must wait for thread to finish before closing
-    }
     Destroy();
 }
 void wxGLFrame::OnClose(wxCloseEvent &event) {
@@ -170,15 +156,75 @@ void wxGLFrame::OnClose(wxCloseEvent &event) {
     delete_fluid_player(player);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
-    if(GetThread() && GetThread()->IsRunning()){
-        infoPrint("Waiting on thread to finish.");
-        GetThread()->Wait(); // Must wait for thread to finish before closing
-    }
     Destroy();
 }
 void wxGLFrame::OnAbout(wxCommandEvent &event){
     wxString msg = "Made by\nKeith Coffman, dcoffm5261@gmail.com\n(2020)";
     wxMessageBox(msg, "About");
+}
+
+void wxGLFrame::SaveFile(wxCommandEvent& event){
+    wxFileDialog d(this,"Save a chord sequence","","","Chord file(*.chord)|*chord",wxFD_SAVE);
+    if(d.ShowModal() == wxID_OK){
+        wxString path = d.GetPath();
+        d.GetPath().EndsWith(".chord",&path);
+        wxFile file(path+".chord", wxFile::write);
+        if(!file.IsOpened()){
+            wxMessageBox("Save failed.");
+            return;
+        }else{  // begin writing
+            wxString str;
+            for(size_t i=0; i<chordSequence.size(); i++){
+                str  = chordSequence[i].label;
+                str += "\t";
+                for(size_t j=0; j<chordSequence[i].notes.size(); j++){
+                    str += chordSequence[i].notes[j].toString(false,true) +",";
+                }
+                str += "\n";
+                file.Write(str);
+            }
+            file.Close();
+            infoPrint("Save successful.");
+        }
+    }
+}
+
+void wxGLFrame::LoadFile(wxCommandEvent& event){
+    wxFileDialog d(this,"Select a chord file","chords","","Chord file(*.chord)|*chord",wxFD_OPEN);
+    if(d.ShowModal() == wxID_OK){
+        wxFile file(d.GetPath(), wxFile::read);
+        if(!file.IsOpened()){
+            wxMessageBox("Failed to open file.");
+            return;
+        }else{
+            clearSeqGrid();
+
+            wxString rest;
+            wxString rest2;
+            wxString line;
+            wxString line2;
+            wxString str;
+            file.ReadAll(&rest);
+            while(!rest.IsEmpty()){
+                line = rest.BeforeFirst('\n',&rest2); rest = rest2; // it messes up if you have the same rest destination as the source
+                    Chorde thisChord = Chorde();
+                    str = line.BeforeFirst('\t',&line2); line = line2;
+                    thisChord.label = str;
+                    while(!line.IsEmpty()){
+                        str = line.BeforeFirst(',',&line2); line = line2;
+                        if(str.length()==3) // very crude check to see if it is a valid note or garbage
+                            thisChord.insertNote(Note(str));
+                    }
+                    chordSequence.push_back(thisChord);
+                    seqGrid->InsertCols(chordSequence.size());
+                    paintCol(chordSequence.size());
+            }
+            file.Close();
+        }
+    }else{ // Cancel button
+        return;
+    }
+    infoPrint("Load successful.");
 }
 
 void wxGLFrame::OnLoadSFButton(wxCommandEvent& event){
@@ -189,6 +235,7 @@ void wxGLFrame::OnLoadSFButton(wxCommandEvent& event){
     }
     infoPrint("Failed to open file.");
 }
+
 void wxGLFrame::LoadSF(wxString filepath){
     int SFID_new = fluid_synth_sfload(synth, filepath, 1);
     if(SFID_new > 0){
@@ -255,6 +302,7 @@ void wxGLFrame::LeftClickMatches(wxGridEvent& evt){
     }
     }
 }
+
 void wxGLFrame::RightClickMatches(wxGridEvent& evt){
     size_t c = evt.GetCol();
     int r = evt.GetRow();

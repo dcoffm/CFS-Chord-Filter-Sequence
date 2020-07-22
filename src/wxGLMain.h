@@ -19,7 +19,6 @@
 #include <wx/generic/grid.h>
 #include <wx/colour.h>
 
-#include <wx/thread.h>
 #include <wx/event.h>
 
 // My files
@@ -29,23 +28,13 @@
 #include <fluidsynth.h>
 
 
-
-
-DECLARE_EVENT_TYPE(wxEVT_THREAD_UPDATE, -1)
-DECLARE_EVENT_TYPE(wxEVT_THREAD_BUFFER, -1)
-
-//extern std::vector<Material> matList;  // array of material types with properties (global)
-
-class BasicGLPane;
-class wxGLFrame: public wxFrame, public wxThreadHelper
+class wxGLFrame: public wxFrame
 {
     public:
         wxGLFrame(wxFrame *frame, const wxString& title);
         ~wxGLFrame();
         wxString info = ""; // String to store status text
         void infoPrint(const char* str);
-
-        wxMutex* bufferMutex; // Mutex to make sure buffers are not changed while sending to GPU
 
     protected:
         DECLARE_EVENT_TABLE()
@@ -58,16 +47,8 @@ class wxGLFrame: public wxFrame, public wxThreadHelper
             idMenuAbout
         };
 
-        enum ThreadTask{
-            HELPTHREAD_LOAD = 0,
-            HELPTHREAD_SAVE,
-            HELPTHREAD_PLAY
-        };
-
         // GUI variables
         int borderSize = 6;
-        bool running=false; // Whether a simulation is already running
-        int task = 0; // defines what task the thread should undertake when called
 
         // fluidsynth stuff
         fluid_settings_t* settings;
@@ -107,18 +88,6 @@ class wxGLFrame: public wxFrame, public wxThreadHelper
         wxColor selColor = wxColor(34,177,76);
         wxColor rootColor = wxColor(20,107,47);
         wxColor unselColor = wxColor(255,255,255);
-
-
-
-        // Thread functions
-        wxThread::ExitCode Entry();
-        void sendUpdate(int type, const char* msg);
-        void sendBuffer(int index, bool setCurrent);
-        void OnThreadUpdate(wxThreadEvent& event);
-        void OnThreadBuffer(wxThreadEvent& event);
-        void thread_();     // general function to create the helper thread
-        void thread_Save(); // Enumerated tasks
-        void thread_Load();
 
 
         // Event callbacks
