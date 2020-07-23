@@ -11,7 +11,7 @@ const long wxGLFrame::ID_buttonLoadSF = wxNewId();
 const long wxGLFrame::ID_choicePreset = wxNewId();
 const long wxGLFrame::ID_checkboxKill = wxNewId();
 const long wxGLFrame::ID_sliderStrum = wxNewId();
-const long wxGLFrame::ID_chordGrid = wxNewId();
+const long wxGLFrame::ID_filterGrid = wxNewId();
 const long wxGLFrame::ID_seqGrid = wxNewId();
 
 BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
@@ -23,15 +23,17 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
 
-    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_chordGrid,wxGLFrame::PlayCellMatches)
-    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_chordGrid,wxGLFrame::ToggleCellMatches)
-    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_seqGrid,wxGLFrame::PlayCellSequence)
-    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,wxGLFrame::ToggleCellSequence)
+    /*
+    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::PlayCell)
+    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ToggleCell)
+    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::PlayCell)
+    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ToggleCell)
 
-    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_chordGrid,wxGLFrame::LeftClickMatches)
-    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_chordGrid,wxGLFrame::RightClickMatches)
-    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_seqGrid,wxGLFrame::LeftClickSequence)
-    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,wxGLFrame::RightClickSequence)
+    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ColumnLeftClick)
+    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ColumnRightClick)
+    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ColumnLeftClick)
+    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ColumnRightClick)
+    */
 
     //EVT_KEY_DOWN(wxGLFrame::keyPressed)
 END_EVENT_TABLE()
@@ -85,33 +87,13 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     int width = 900;
     int y0 = 180;
 
-    seqGrid = new wxGrid(this,ID_seqGrid,wxPoint(0,y0),wxSize(width,height));
-    seqGrid->DisableDragGridSize();
-    seqGrid->EnableEditing(false);
-    seqGrid->SetCellHighlightPenWidth(0);
-    seqGrid->SetDefaultRenderer(new MyGridCellRenderer);
-    wxGridSizesInfo gzi = wxGridSizesInfo();
-    gzi.m_sizeDefault = 38;
-    seqGrid->SetColSizes(gzi);
-    gzi.m_sizeDefault = 20;
-    seqGrid->SetRowSizes(gzi);
-    makeSeqGrid();
+    seqGrid = new SequenceGrid(this,ID_seqGrid,wxPoint(0,y0),wxSize(width,height));
 
     wxStaticBoxSizer* chordBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Chords");
     mainGrid->Add(chordBox,wxGBPosition(0,1),wxGBSpan(1,1),wxLEFT|wxRIGHT|wxBOTTOM|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND, borderSize);
-    chordGrid = new wxGrid(this,ID_chordGrid,wxPoint(width+1,y0),wxSize(width,height));
-    chordGrid->DisableDragGridSize();
-    chordGrid->EnableEditing(false);
-    chordGrid->SetCellHighlightPenWidth(0);
-    chordGrid->SetDefaultRenderer(new MyGridCellRenderer);
-    gzi.m_sizeDefault = 38;
-    chordGrid->SetColSizes(gzi);
-    gzi.m_sizeDefault = 20;
-    chordGrid->SetRowSizes(gzi);
-    chordGrid->CreateGrid(NNotes,1);
-    makeChordGrid();
 
-    input.label = "?";
+    filterGrid = new FilterGrid(this,ID_filterGrid,wxPoint(width+1,y0),wxSize(width,height));
+
 
     // Setting up fluidsynth
     settings = new_fluid_settings();
@@ -140,6 +122,9 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     Layout();
     SetMinSize(mainGrid->Fit(this));
     SetSize(1700,1000);
+
+    //wxWindow* seqGridWin = seqGrid->GetGridWindow();
+
 }
 
 wxGLFrame::~wxGLFrame(){ }
@@ -174,11 +159,12 @@ void wxGLFrame::SaveFile(wxCommandEvent& event){
             return;
         }else{  // begin writing
             wxString str;
-            for(size_t i=0; i<chordSequence.size(); i++){
-                str  = chordSequence[i].label;
+            const std::vector<Chorde>& sequence = seqGrid->getChordList();
+            for(size_t i=0; i<sequence.size(); i++){
+                str  = sequence[i].label;
                 str += "\t";
-                for(size_t j=0; j<chordSequence[i].notes.size(); j++){
-                    str += chordSequence[i].notes[j].toString(false,true) +",";
+                for(size_t j=0; j<sequence[i].notes.size(); j++){
+                    str += sequence[i].notes[j].toString(true) +",";
                 }
                 str += "\n";
                 file.Write(str);
@@ -197,7 +183,7 @@ void wxGLFrame::LoadFile(wxCommandEvent& event){
             wxMessageBox("Failed to open file.");
             return;
         }else{
-            clearSeqGrid();
+            seqGrid->clearChords();
 
             wxString rest;
             wxString rest2;
@@ -215,9 +201,7 @@ void wxGLFrame::LoadFile(wxCommandEvent& event){
                         if(str.length()==3) // very crude check to see if it is a valid note or garbage
                             thisChord.insertNote(Note(str));
                     }
-                    chordSequence.push_back(thisChord);
-                    seqGrid->InsertCols(chordSequence.size());
-                    paintCol(chordSequence.size());
+                    seqGrid->appendChord(thisChord);
             }
             file.Close();
         }
@@ -285,182 +269,10 @@ void wxGLFrame::infoPrint(const char* str){
     Layout();
 }
 
-void wxGLFrame::LeftClickMatches(wxGridEvent& evt){
-    size_t c = evt.GetCol();
-    int r = evt.GetRow();
-    if(r==-1){
-    if(evt.ShiftDown()){
-        if(c==0)
-            clipboard = input;
-        else
-            clipboard = matches[c-1];
-    }else{
-        if(c==0)
-            fluidPlayChord(input);
-        else
-            fluidPlayChord(matches[c-1]);
-    }
-    }
-}
-
-void wxGLFrame::RightClickMatches(wxGridEvent& evt){
-    size_t c = evt.GetCol();
-    int r = evt.GetRow();
-    if(r==-1){
-    if( evt.ShiftDown() &&  evt.ControlDown()){ // insert chord before
-        // meaningless in context of matches grid
-    }
-    if( evt.ShiftDown() && !evt.ControlDown()){ // paste chord (replace)
-        if(c==0){ // only meaningful to replace inputs
-            input = clipboard;
-            input.label = "?";
-            filterChords();
-        }
-    }
-    if(!evt.ShiftDown() && !evt.ControlDown()){ // delete chord (a match you're not interested in, except input...)
-        if(c!=0)
-            matches.erase(matches.begin()+c-1);
-    }
-    }
-    makeChordGrid();
-}
-
-void wxGLFrame::LeftClickSequence(wxGridEvent& evt){
-    size_t c = evt.GetCol();
-    int r = evt.GetRow();
-    if(r==-1){
-    if(evt.ShiftDown()){
-        if(c>0 && c<=chordSequence.size())
-            clipboard = chordSequence[c-1];
-        if(c>chordSequence.size())
-            clipboard = Chorde();
-    }else{
-        if(c>0 && c<=chordSequence.size())
-            fluidPlayChord(chordSequence[c-1]);
-
-    }
-    }
-}
-
-void wxGLFrame::RightClickSequence(wxGridEvent& evt){
-    size_t c = evt.GetCol();
-    int r = evt.GetRow();
-    if(r==-1){
-    if( evt.ShiftDown() &&  evt.ControlDown()){ // insert chord before
-        if(c>0 && c<=chordSequence.size()){
-            chordSequence.insert(chordSequence.begin()+(c-1),clipboard);
-            seqGrid->InsertCols(c);
-            paintCol(c);
-        }
-        if(c>chordSequence.size()){
-            chordSequence.push_back(clipboard);
-            seqGrid->InsertCols(c);
-            paintCol(c);
-        }
-    }
-    if( evt.ShiftDown() && !evt.ControlDown()){ // paste chord (replace)
-        if(c>0 && c<=chordSequence.size()){
-            chordSequence[c-1] = clipboard;
-            paintCol(c);
-        }
-        if(c>chordSequence.size()){
-            chordSequence.push_back(clipboard);
-            seqGrid->InsertCols(c);
-            paintCol(c);
-        }
-
-    }
-    if(!evt.ShiftDown() && !evt.ControlDown()){ // delete chord
-        if(c!=0 && c<=chordSequence.size()){
-            chordSequence.erase(chordSequence.begin()+(c-1));
-            seqGrid->DeleteCols(c);
-        }
-
-    }
-    }
-}
-
-void wxGLFrame::PlayCellMatches(wxGridEvent& evt){
-    int r = evt.GetRow();
-    int c = evt.GetCol();
-    Note note = Note(topNote-r);
-
+void wxGLFrame::fluidPlayNote(Note& note){
     if(checkboxKill->GetValue())
         fluidEndChord();
-    if(!chordGrid->GetCellValue(r,c).IsEmpty()){
-        fluid_synth_noteon(synth, 0, note.val, 100);
-    }
-}
-
-void wxGLFrame::PlayCellSequence(wxGridEvent& evt){
-    int r = evt.GetRow();
-    int c = evt.GetCol();
-    Note note = Note(topNote-r);
-
-    if(checkboxKill->GetValue())
-        fluidEndChord();
-    if(!seqGrid->GetCellValue(r,c).IsEmpty()){
-        fluid_synth_noteon(synth, 0, note.val, 100);
-    }
-}
-
-void wxGLFrame::ToggleCellMatches(wxGridEvent& evt){
-    int r = evt.GetRow();
-    int c = evt.GetCol();
-    if(!chordGrid->GetCellValue(r,c).IsEmpty()){ // if the cell is a valid option
-    if(c==0){
-        if(chordGrid->GetCellBackgroundColour(r,c)==selColor){
-            chordGrid->SetCellBackgroundColour(r,c,unselColor);
-            input.removeNote(Note(topNote-r));
-        }else{
-            chordGrid->SetCellBackgroundColour(r,c,selColor);
-            input.insertNote(Note(topNote-r));
-        }
-
-        filterChords();
-    }
-    if(c>0){
-        if(chordGrid->GetCellBackgroundColour(r,c)==selColor || chordGrid->GetCellBackgroundColour(r,c)==rootColor){
-            chordGrid->SetCellBackgroundColour(r,c,unselColor);
-            matches[c-1].removeNote(Note(topNote-r));
-        }else{
-            if(topNote-r==matches[c-1].root.val)
-                chordGrid->SetCellBackgroundColour(r,c,rootColor);
-            else
-                chordGrid->SetCellBackgroundColour(r,c,selColor);
-            matches[c-1].insertNote(Note(topNote-r));
-        }
-    }}
-
-    Refresh();
-    Update();
-}
-
-void wxGLFrame::ToggleCellSequence(wxGridEvent& evt){
-    int r = evt.GetRow();
-    int c = evt.GetCol();
-    if(c==0){
-        if(seqGrid->GetCellBackgroundColour(r,c)==selColor){
-            seqGrid->SetCellBackgroundColour(r,c,unselColor);
-            key.removeNote(Note(topNote-r));
-        }else{
-            seqGrid->SetCellBackgroundColour(r,c,selColor);
-            key.insertNote(Note(topNote-r));
-        }
-    }
-
-    if(!seqGrid->GetCellValue(r,c).IsEmpty() && c>0){ // if the cell is a valid option
-        if(seqGrid->GetCellBackgroundColour(r,c)==selColor){
-            seqGrid->SetCellBackgroundColour(r,c,unselColor);
-            chordSequence[c-1].removeNote(Note(topNote-r));
-        }else{
-            seqGrid->SetCellBackgroundColour(r,c,selColor);
-            chordSequence[c-1].insertNote(Note(topNote-r));
-        }
-    }
-
-    Refresh();
-    Update();
+    fluid_synth_noteon(synth, 0, note.val, note.vel);
 }
 
 void wxGLFrame::fluidPlayChord(Chorde& chord){
@@ -478,164 +290,4 @@ void wxGLFrame::fluidEndChord(){
     }
 }
 
-void wxGLFrame::filterChords(){
-    matches.clear();
-    matches_.clear();
 
-    if(input.notes.size()>0){
-    for(int i=CHORD_M; i!=CHORD_UNK; i++){
-        for(int j=-6; j<6; j++){ // choose j'th note as root. Does it find all the others?
-            int rootNote = input.notes[0].val+j;
-
-            Chorde thisChord = input; // re-copy the input list
-            thisChord.ct = static_cast<ChordType>(i);
-            thisChord.root = Note(rootNote);
-            thisChord.defaultLabel();
-
-            for(int k=0; k<12; k++){ absList.l[k]=false; }
-            int m=0;
-
-            for(int l=0;l<5;l++){
-                // check if this chroma is already in the notes of thisChord, and if not add it
-                int absNote = (rootNote+chordSteps[i][l])%12;
-                absList.l[absNote] = true;
-
-                // check if this satisfies one of the inputs
-                for(size_t k=0; k<input.notes.size(); k++){
-                    int thisNote = input.notes[k].val%12;
-                    if(thisNote== absNote && (chordSteps[i][l]!=0 || l==0)){
-                        m++;
-                    }
-                }
-
-                // add the note to the matched chord
-                bool alreadyPresent = false;
-                for(size_t k=0; k<thisChord.notes.size(); k++){
-                    int thisNote = thisChord.notes[k].val%12;
-                    if(thisNote== absNote && (chordSteps[i][l]!=0 || l==0)){
-                        alreadyPresent = true;
-                    }
-                }
-                if(!alreadyPresent)
-                    thisChord.insertNote(Note(rootNote+chordSteps[i][l]));
-            }
-            if(m==(int)input.notes.size()){ // found a chord that contains what we want; now check uniqueness
-                bool isUniq = true;
-                for(size_t k=0;k<matches_.size();k++){
-                    bool somethingNew = false;
-                    for(int l=0;l<12;l++){
-                        somethingNew = somethingNew || (matches_[k].l[l] != absList.l[l]) ;
-                    }
-                    if(!somethingNew){isUniq = false; break;}
-                }
-                if(isUniq){
-                    matches.push_back(thisChord);
-                    matches_.push_back(absList);
-                }
-            }
-        }
-    }}
-    nChords = matches.size();
-    makeChordGrid();
-    infoPrint(wxString::Format("There are %i chords",nChords));
-}
-
-void wxGLFrame::makeChordGrid(){
-
-    if(chordGrid->GetNumberCols()>1)
-        chordGrid->DeleteCols(1,chordGrid->GetNumberCols()-1);
-    chordGrid->AppendCols(nChords);
-
-    for(int r=0; r<NNotes; r++){
-        Note note;
-        note.val = topNote-r;
-        if(note.val%12==0)
-            chordGrid->SetRowLabelValue(r,wxString::Format("%i",note.val/12-1));
-        else
-            chordGrid->SetRowLabelValue(r,wxEmptyString);
-
-        for(int c=0; c<=nChords; c++){
-            if(c==0){
-                chordGrid->SetColLabelValue(c,"In-\nput");
-                chordGrid->SetCellValue(r,c,note.toString());
-                bool isInput = false;
-                for(size_t i=0;i<input.notes.size();i++){
-                    if(note.val==input.notes[i].val)
-                        isInput = true;
-                }
-                if(isInput)
-                    chordGrid->SetCellBackgroundColour(r,c,selColor);
-                else
-                    chordGrid->SetCellBackgroundColour(r,c,unselColor);
-            }
-            else{
-                Chorde a = matches[c-1];
-
-                wxString colLabel = a.label;
-                colLabel.Replace(" ","\n",false);
-                chordGrid->SetColLabelValue(c,colLabel);
-
-                for(size_t i=0;i<a.notes.size();i++){
-                    if(note.val == a.notes[i].val)
-                        chordGrid->SetCellBackgroundColour(r,c,selColor);
-                    if(note.val%12 == a.notes[i].val%12)
-                        chordGrid->SetCellValue(r,c,note.toString());
-                }
-                if(note.val == a.root.val)
-                    chordGrid->SetCellBackgroundColour(r,c,rootColor);
-            }
-        }
-    }
-
-}
-
-void wxGLFrame::paintCol(int c){
-        for(int r=0; r<NNotes; r++){
-        Note note;
-        note.val = topNote-r;
-
-        Chorde chord = chordSequence[c-1];
-
-        if(r==0){
-            wxString colLabel = chord.label;
-            colLabel.Replace(" ","\n",false);
-            seqGrid->SetColLabelValue(c,colLabel);
-        }
-
-        bool paint = false;
-        bool text = false;
-        for(size_t i=0;i<chord.notes.size();i++){
-            if(chord.notes[i].val == note.val)      // if actually played
-                paint = true;
-            if(chord.notes[i].val%12 == note.val%12) // if it shares the chroma of selected notes
-                text = true;
-        }
-
-        if(paint){seqGrid->SetCellBackgroundColour(r,c,selColor);}
-        else{seqGrid->SetCellBackgroundColour(r,c,unselColor);}
-        if(text){seqGrid->SetCellValue(r,c,note.toString());}
-        else{seqGrid->SetCellValue(r,c,"");}
-
-    }
-}
-
-void wxGLFrame::makeSeqGrid(){ // run the first time to make the row labels and cols
-
-    seqGrid->CreateGrid(NNotes,2); // first column is all notes, second column is empty for inserting
-    seqGrid->SetColLabelValue(0,"");
-    seqGrid->SetColLabelValue(1,"-");
-
-    for(int r=0; r<NNotes; r++){
-        Note note;
-        note.val = topNote-r;
-        if(note.val%12==0)
-            seqGrid->SetRowLabelValue(r,wxString::Format("%i",note.val/12-1));
-        else
-            seqGrid->SetRowLabelValue(r,wxEmptyString);
-        seqGrid->SetCellValue(r,0,note.toString());
-    }
-}
-void wxGLFrame::clearSeqGrid(){ // run the first time to make the row labels and cols
-    seqGrid->DeleteCols(1,seqGrid->GetNumberCols()-2);
-    chordSequence.clear();
-}

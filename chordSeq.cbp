@@ -18,9 +18,7 @@
 					<Add option="-static" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_release/include" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_release/lib/gcc_lib/mswu" />
-					<Add directory="F:/CodeBlocks/Libraries/glew-2.1.0/include" />
-					<Add directory="F:/CodeBlocks/Libraries/glm" />
-					<Add directory="F:/CodeBlocks/Projects/ChordSequencer/include" />
+					<Add directory="lib/fluidsynth" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_release/include" />
@@ -34,16 +32,9 @@
 					<Add library="libwxbase31u.a" />
 					<Add library="libwxpng.a" />
 					<Add library="libwxzlib.a" />
-					<Add library="libopengl32.a" />
-					<Add library="libglu32.a" />
-					<Add library="F:/CodeBlocks/Libraries/glew-2.1.0/lib/libglew32.dll.a" />
-					<Add library="libgmp.a" />
-					<Add library="libglib-2.0.dll.a" />
 					<Add library="libfluidsynth.dll.a" />
-					<Add library="libreadline.a" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_release/lib/gcc_lib" />
-					<Add directory="F:/CodeBlocks/Projects/ChordSequencer/include" />
-					<Add directory="C:/msys64/mingw64/lib" />
+					<Add directory="lib/fluidsynth" />
 				</Linker>
 			</Target>
 			<Target title="Debug">
@@ -56,9 +47,7 @@
 					<Add option="-g" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_debug/include" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_debug/lib/gcc_lib/mswud" />
-					<Add directory="F:/CodeBlocks/Libraries/glew-2.1.0/include" />
-					<Add directory="F:/CodeBlocks/Libraries/glm" />
-					<Add directory="F:/CodeBlocks/Projects/ChordSequencer/include" />
+					<Add directory="lib/fluidsynth" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_debug/include" />
@@ -69,13 +58,9 @@
 					<Add library="libwxbase31ud.a" />
 					<Add library="libwxpngd.a" />
 					<Add library="libwxzlibd.a" />
-					<Add library="libopengl32.a" />
-					<Add library="libglu32.a" />
-					<Add library="F:/CodeBlocks/Libraries/glew-2.1.0/lib/libglew32.dll.a" />
-					<Add library="libgmp.a" />
 					<Add library="libfluidsynth.dll.a" />
 					<Add directory="F:/CodeBlocks/Libraries/wxWidgets-3.1.2_debug/lib/gcc_lib" />
-					<Add directory="F:/CodeBlocks/Projects/ChordSequencer/include" />
+					<Add directory="lib/fluidsynth" />
 				</Linker>
 			</Target>
 		</Build>
@@ -111,17 +96,16 @@
 			<Add library="libuxtheme.a" />
 			<Add library="liboleacc.a" />
 		</Linker>
-		<Unit filename="Notes.h" />
-		<Unit filename="Shader.h" />
-		<Unit filename="resource.rc">
+		<Unit filename="src/ChordGrid.cpp" />
+		<Unit filename="src/ChordGrid.h" />
+		<Unit filename="src/Notes.h" />
+		<Unit filename="src/resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
-		<Unit filename="thread_.cpp" />
-		<Unit filename="thread_LoadSave.cpp" />
-		<Unit filename="wxGLApp.cpp" />
-		<Unit filename="wxGLApp.h" />
-		<Unit filename="wxGLMain.cpp" />
-		<Unit filename="wxGLMain.h" />
+		<Unit filename="src/wxGLApp.cpp" />
+		<Unit filename="src/wxGLApp.h" />
+		<Unit filename="src/wxGLMain.cpp" />
+		<Unit filename="src/wxGLMain.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

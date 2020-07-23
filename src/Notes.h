@@ -3,6 +3,7 @@
 #define NOTES_H
 
 #include <wx/string.h>
+#include <vector>
 
 enum noteNum{
     NOTE_C = 0,
@@ -17,81 +18,6 @@ enum noteNum{
     NOTE_A,
     NOTE_Bb,
     NOTE_B
-};
-
-struct Note{
-
-    Note(int inVal=0, int inVel=100){val = inVal; vel=inVel;}
-    Note(wxString str, int inVel=100){
-        vel = inVel;
-        val = toInt(str);
-    }
-
-    int vel = 100;
-    int val = 0;
-
-
-    wxString toString(bool flat=false, bool addOct=false){
-        wxString str;
-        int oct = val/12 - 1;
-        switch (val%12){ // if flat, use flat representation instead of sharp representation
-        case 0 :
-            str =       "C "; break;
-        case 1 :
-            str = (flat?"Db":"C#"); break;
-        case 2 :
-            str =       "D ";       break;
-        case 3 :
-            str = (flat?"Eb":"D#"); break;
-        case 4 :
-            str =       "E ";       break;
-        case 5 :
-            str =       "F ";       break;
-        case 6 :
-            str = (flat?"Gb":"F#"); break;
-        case 7 :
-            str =       "G ";       break;
-        case 8 :
-            str = (flat?"Ab":"G#"); break;
-        case 9 :
-            str =       "A ";       break;
-        case 10:
-            str = (flat?"Bb":"A#"); break;
-        case 11:
-            str =       "B ";       break;
-        }
-        if(addOct)
-            str << oct;
-        return str;
-    }
-    int toInt(wxString str){
-        long int oct = 3;
-        int chroma = 0;
-        int accidental = 0;
-        str.Right(1).ToLong(&oct);
-        str = str.Left(2);
-        if(str.Right(1)=="#")
-            accidental =  1;
-        if(str.Right(1)=="b")
-            accidental = -1;
-        if(str.Left(1)=="C")
-            chroma =  0;
-        if(str.Left(1)=="D")
-            chroma =  2;
-        if(str.Left(1)=="E")
-            chroma =  4;
-        if(str.Left(1)=="F")
-            chroma =  5;
-        if(str.Left(1)=="G")
-            chroma =  7;
-        if(str.Left(1)=="A")
-            chroma =  9;
-        if(str.Left(1)=="B")
-            chroma = 11;
-        return chroma+accidental + 12*(oct+1);
-    }
-
-
 };
 
 enum ChordType{
@@ -216,29 +142,170 @@ static const int chordSteps[][5] = {
     [CHORD_UNK]     = { 0, 0, 0, 0, 0}
 };
 
-struct AbsList{
-    bool l[12];
+
+struct Note{
+
+    Note(int inVal=0, int inVel=100){val = inVal; vel=inVel;}
+    Note(wxString str, int inVel=100){
+        vel = inVel;
+        val = toInt(str);
+    }
+
+    int vel = 100;
+    int val = 0;
+
+    operator int() const {return val;}
+    operator wxString() const {return this->toString();}
+
+    Note operator+(Note const &n){
+        Note output;
+        output.val = val + n.val;
+        return output;
+    }
+    Note operator+(int n){
+        Note output;
+        output.val = val + n;
+        return output;
+    }
+    int operator-(Note n){ // note with another note: return interval
+        return val - n.val;
+    }
+    Note operator-(int n){ // note with a number: decrement the note by an interval
+        Note output;
+        output.val = val-n;
+        return output;
+    }
+    bool operator<(int n){
+        return val<n;
+    }
+    bool operator<(Note n){
+        return val<n.val;
+    }
+    bool operator>(int n){
+        return val>n;
+    }
+    bool operator>(Note n){
+        return val>n.val;
+    }
+    bool operator==(int n){
+        return val == n;
+    }
+    bool operator==(Note n){
+        return val == n.val;
+    }
+    Note & operator++(){
+        val++;
+        return *this;
+    }
+    Note & operator--(){
+        val--;
+        return *this;
+    }
+
+    int chroma() const{
+        return val%12;
+    }
+    int octave() const{
+        return val/12 - 1;
+    }
+
+    wxString toString(bool addOct=false, char acc='#') const{ // indicate flat or sharp accidentals by 'b' or '#' respectively
+        wxString str;
+        switch (chroma()){
+        case 0 :
+            str =            "C ";       break;
+        case 1 :
+            str = (acc=='b'?"Db":"C#"); break;
+        case 2 :
+            str =            "D ";       break;
+        case 3 :
+            str = (acc=='b'?"Eb":"D#"); break;
+        case 4 :
+            str =            "E ";       break;
+        case 5 :
+            str =            "F ";       break;
+        case 6 :
+            str = (acc=='b'?"Gb":"F#"); break;
+        case 7 :
+            str =            "G ";       break;
+        case 8 :
+            str = (acc=='b'?"Ab":"G#"); break;
+        case 9 :
+            str =            "A ";       break;
+        case 10:
+            str = (acc=='b'?"Bb":"A#"); break;
+        case 11:
+            str =            "B ";       break;
+        }
+        if(addOct)
+            str << octave();
+        return str;
+    }
+
+    int toInt(wxString str) const{
+        long int oct = 3;
+        int chrom = 0;
+        int accidental = 0;
+        str.Right(1).ToLong(&oct);
+        str = str.Left(2);
+        if(str.Right(1)=="#")
+            accidental =  1;
+        if(str.Right(1)=="b")
+            accidental = -1;
+        if(str.Left(1)=="C")
+            chrom =  0;
+        if(str.Left(1)=="D")
+            chrom =  2;
+        if(str.Left(1)=="E")
+            chrom =  4;
+        if(str.Left(1)=="F")
+            chrom =  5;
+        if(str.Left(1)=="G")
+            chrom =  7;
+        if(str.Left(1)=="A")
+            chrom =  9;
+        if(str.Left(1)=="B")
+            chrom = 11;
+        return chrom+accidental + 12*(oct+1);
+    }
+    int toInt() const{
+        return toInt(this->toString());
+    }
 };
 
 typedef std::vector<Note> Notes;
 
 struct Chorde{
-    Notes notes;    // the notes to be played when articulating this chord
-    Note root;      // note stored only for intervals and labeling purposes; may or may not be articulated
-    ChordType ct;   // defines what notes are possible for articulation
-    wxString label; // user-defined label for the chord. Defaults to chordNames[ct],
+    Notes notes;            // the notes to be played when articulating this chord
+    Note root;              // note stored only for intervals and labeling purposes; may or may not be articulated
+    ChordType ct = CHORD_UNK;   // defines what notes are possible for articulation
+    bool chromaList[12] = {false,false,false,false,false,false,false,false,false,false,false,false}; // a list of which chroma are present in the chord. Alternative to definition from root + chord type
+    wxString label = "";        // user-defined label for the chord. Defaults to chordNames[ct],
+
+    Chorde(){ }
+    Chorde(Note& rootIn,ChordType ctIn){
+        root = rootIn;
+        ct = ctIn;
+        for(int i=0; i<5; i++){
+            Note thisnote = root + chordSteps[ct][i];
+            chromaList[thisnote.chroma()] = true;
+            insertNote(thisnote);
+        }
+        defaultLabel();
+    }
+
     void defaultLabel(){
         label = root.toString() + " " + chordNames[ct];
     }
     void insertNote(Note in){
         bool inserted=false;
-        for(Notes::const_iterator it=notes.begin(); it!=notes.end(); it++){
-            if(in.val == it->val){ // no duplicates
+        for(size_t i=0; i<notes.size(); i++){
+            if(in == notes[i]){ // no duplicates
                 inserted=true;
                 break;
             }
-            if(in.val < it->val){
-                notes.insert(it,in);
+            if(in < notes[i]){
+                notes.insert(notes.begin()+i,in);
                 inserted=true;
                 break;
             }
@@ -247,15 +314,16 @@ struct Chorde{
             notes.push_back(in);
     }
     void removeNote(Note in){
-        for(Notes::const_iterator it=notes.begin(); it!=notes.end(); it++){
-            if(in.val == it->val){
-                notes.erase(it);
+        for(size_t i=0; i<notes.size(); i++){
+            if(in.val == notes[i].val){
+                notes.erase(notes.begin()+i);
                 break;
             }
         }
     }
-};
 
+
+};
 
 /*
 const int priority[] = {
