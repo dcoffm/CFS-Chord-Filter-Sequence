@@ -312,6 +312,8 @@ struct Chorde{
         }
         if(!inserted)
             notes.push_back(in);
+
+        chromaList[in.chroma()] = true;
     }
     void removeNote(Note in){
         for(size_t i=0; i<notes.size(); i++){

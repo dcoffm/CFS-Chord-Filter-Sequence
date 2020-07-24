@@ -25,12 +25,13 @@ public:
 
 protected:
     wxGLFrame* parent;
+    wxWindow* thisWin;
     Chorde input;
     std::vector<Chorde> chordList;
 
     Note topNote = wxString("C 8");
     Note botNote = wxString("C 0");
-    int NNotes = topNote-botNote; // Number of notes (rows) in the grid.
+    int NNotes = topNote-botNote+1; // Number of notes (rows) in the grid.
     wxColor selColor = wxColor(34,177,76);
     wxColor rootColor = wxColor(20,107,47);
     wxColor unselColor = wxColor(255,255,255);

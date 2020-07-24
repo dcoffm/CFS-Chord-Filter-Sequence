@@ -23,18 +23,6 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
 
-    /*
-    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::PlayCell)
-    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ToggleCell)
-    EVT_GRID_CMD_CELL_LEFT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::PlayCell)
-    EVT_GRID_CMD_CELL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ToggleCell)
-
-    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ColumnLeftClick)
-    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_filterGrid,FilterGrid::ColumnRightClick)
-    EVT_GRID_CMD_LABEL_LEFT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ColumnLeftClick)
-    EVT_GRID_CMD_LABEL_RIGHT_CLICK(wxGLFrame::ID_seqGrid,SequenceGrid::ColumnRightClick)
-    */
-
     //EVT_KEY_DOWN(wxGLFrame::keyPressed)
 END_EVENT_TABLE()
 
@@ -45,7 +33,7 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     //: wxFrame(frame, -1, title,wxDefaultPosition){
 
     wxSize sz; // Generic size object for various uses
-    wxGridBagSizer* mainGrid = new wxGridBagSizer(5,5); // Grid containing control menu and openGL window
+    wxGridBagSizer* mainGrid = new wxGridBagSizer(5,5); // Grid containing control menu
     controlPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,wxDefaultSize, wxTAB_TRAVERSAL, "mainPanel");
     this->SetSizer(mainGrid);
     mainGrid->Add(controlPanel,wxGBPosition(0,0),wxGBSpan(1,1),wxALIGN_LEFT,borderSize);
@@ -93,7 +81,6 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     mainGrid->Add(chordBox,wxGBPosition(0,1),wxGBSpan(1,1),wxLEFT|wxRIGHT|wxBOTTOM|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND, borderSize);
 
     filterGrid = new FilterGrid(this,ID_filterGrid,wxPoint(width+1,y0),wxSize(width,height));
-
 
     // Setting up fluidsynth
     settings = new_fluid_settings();
