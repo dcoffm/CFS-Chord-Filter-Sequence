@@ -22,10 +22,12 @@ public:
     void playChord(int c);
     void ColumnLeftClick(wxGridEvent& evt);
     void appendChord(Chorde& chord);
+    ChordGrid* sibling;
 
 protected:
     wxGLFrame* parent;
     wxWindow* thisWin;
+
     Chorde input;
     std::vector<Chorde> chordList;
 
@@ -40,6 +42,15 @@ protected:
     void paintCol(int c);
     void removeChord(int c);
     void copyChord(int c);
+
+    void onMouseMove(wxMouseEvent& evt);
+    void mouseMMove(wxMouseEvent& evt);
+    void mouseMDown(wxMouseEvent& evt);
+    void mouseMUp(wxMouseEvent& evt);
+    void onScroll(wxScrollWinEvent& event);
+    wxCoord dragX, dragY; // initial position before mouse drag for middle-click
+    int scrollX, scrollY; // initial scroll position before mouse drag
+    bool dragging = false;
 };
 class MyGridCellRenderer : public wxGridCellStringRenderer
 {
@@ -50,6 +61,7 @@ public:
 };
 
 
+class FilterGrid;
 
 class SequenceGrid: public ChordGrid
 {
@@ -57,8 +69,10 @@ public:
     SequenceGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos=wxDefaultPosition, const wxSize &size=wxDefaultSize, long style=wxWANTS_CHARS, const wxString &name=wxGridNameStr);
     ~SequenceGrid();
 
+    //FilterGrid* sibling;
     void ColumnRightClick(wxGridEvent& evt);
     void clearChords();
+    //void onScroll(wxScrollWinEvent& event);
 };
 
 
@@ -69,6 +83,7 @@ public:
     FilterGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos=wxDefaultPosition, const wxSize &size=wxDefaultSize, long style=wxWANTS_CHARS, const wxString &name=wxGridNameStr);
     ~FilterGrid();
 
+    //SequenceGrid* sibling;
     void ColumnRightClick(wxGridEvent& evt);
     void ToggleCell(wxGridEvent& evt);
     void clearChords();

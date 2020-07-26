@@ -12,24 +12,105 @@ ChordGrid::ChordGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, const 
 {
     parent = parnt;
     thisWin = GetGridWindow();
+
     DisableDragGridSize();
     DisableDragColSize();
     DisableDragRowSize();
     EnableEditing(false);
     SetCellHighlightPenWidth(0);
     SetDefaultRenderer(new MyGridCellRenderer);
+    SetDefaultCellAlignment(wxALIGN_CENTER,wxALIGN_CENTER);
+    SetScrollbars(1,1,1,1); // not sure how to predict noUnits but hopefully that updates automatically when the table changes?
+    ShowScrollbars(wxSHOW_SB_ALWAYS,wxSHOW_SB_NEVER);
+    DisableKeyboardScrolling();
 
     wxGridSizesInfo gzi = wxGridSizesInfo();
     gzi.m_sizeDefault = 38; SetColSizes(gzi);
     gzi.m_sizeDefault = 20; SetRowSizes(gzi);
 
     CreateGrid(NNotes,1); // first column is a list of all notes
+    SetRowLabelSize(wxGRID_AUTOSIZE);
+
+    wxSize sz;
+    int w = 0;
+    int h = 0;
+    h += GetColLabelSize();
+    h += 14*GetDefaultRowSize();
+    w += GetRowLabelSize();
+    w += 5*GetDefaultColSize();
+    SetMinSize(wxSize(w,h));
 
     Bind(wxEVT_GRID_CELL_LEFT_CLICK, &ChordGrid::PlayCell, this);
+    Bind(wxEVT_GRID_CELL_LEFT_DCLICK, &ChordGrid::PlayCell, this);
     Bind(wxEVT_GRID_LABEL_LEFT_CLICK, &ChordGrid::ColumnLeftClick, this);
+    Bind(wxEVT_GRID_LABEL_LEFT_DCLICK, &ChordGrid::ColumnLeftClick, this);
+
+    Bind(wxEVT_SCROLLWIN_LINEDOWN, &ChordGrid::onScroll, this);
+    Bind(wxEVT_SCROLLWIN_LINEUP, &ChordGrid::onScroll, this);
+    Bind(wxEVT_SCROLLWIN_PAGEDOWN, &SequenceGrid::onScroll, this);
+    Bind(wxEVT_SCROLLWIN_PAGEUP, &SequenceGrid::onScroll, this);
+
+    //Bind(wxEVT_MOTION, &ChordGrid::onMouseMove, this);
+    //Bind(wxEVT_MIDDLE_DOWN, &ChordGrid::mouseMDown, this);
+    //Bind(wxEVT_MIDDLE_UP, &ChordGrid::mouseMUp, this);
+    thisWin->Connect(wxID_ANY,wxEVT_MOTION,wxMouseEventHandler(ChordGrid::onMouseMove),NULL,this);
+    thisWin->Connect(wxID_ANY,wxEVT_MIDDLE_DOWN,wxMouseEventHandler(ChordGrid::mouseMDown),NULL,this);
+    thisWin->Connect(wxID_ANY,wxEVT_MIDDLE_UP,wxMouseEventHandler(ChordGrid::mouseMUp),NULL,this);
 }
 ChordGrid::~ChordGrid(){ }
 
+void ChordGrid::onScroll(wxScrollWinEvent& event){
+    sibling->GetViewStart(&sibling->scrollX,&sibling->scrollY);
+    GetViewStart(&scrollX,&scrollY);
+
+    wxEventType t = event.GetEventType();
+
+    if(t==wxEVT_SCROLLWIN_LINEDOWN){
+        if(wxGetKeyState(WXK_SHIFT))
+            scrollX += GetDefaultColSize();
+        else
+            scrollY += GetDefaultRowSize();
+    }
+    if(t==wxEVT_SCROLLWIN_LINEUP){
+        if(wxGetKeyState(WXK_SHIFT))
+            scrollX -= GetDefaultColSize();
+        else
+            scrollY -= GetDefaultRowSize();
+    }
+    Scroll(scrollX,scrollY);
+    sibling->Scroll(sibling->scrollX,scrollY);
+}
+
+void ChordGrid::onMouseMove(wxMouseEvent& event){
+if(dragging){
+    int oldX = dragX;
+    int oldY = dragY;
+    wxGetMousePosition(&dragX,&dragY);
+
+    int xUnit, yUnit;
+    GetScrollPixelsPerUnit(&xUnit,&yUnit);
+
+    int scrollDX = (oldX-dragX)/xUnit;
+    int scrollDY = (oldY-dragY)/yUnit;
+
+    this->GetViewStart(&scrollX,&scrollY);
+    sibling->GetViewStart(&sibling->scrollX,&sibling->scrollY);
+
+    this->Scroll(scrollX+scrollDX,scrollY+scrollDY);
+    sibling->Scroll(sibling->scrollX,scrollY+scrollDY);
+}}
+void ChordGrid::mouseMDown(wxMouseEvent& event){
+    dragging = true;
+    wxGetMousePosition(&dragX,&dragY);
+    thisWin->CaptureMouse();
+}
+
+void ChordGrid::mouseMUp(wxMouseEvent& event){
+    if(dragging){
+        dragging = false;
+        thisWin->ReleaseMouse();
+    }
+}
 
 void ChordGrid::paintInput(){
     SetColLabelValue(0,input.label);
@@ -181,6 +262,7 @@ SequenceGrid::SequenceGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, 
     Bind(wxEVT_GRID_LABEL_RIGHT_DCLICK, &SequenceGrid::ColumnRightClick, this);
 }
 SequenceGrid::~SequenceGrid(){ }
+
 
 void SequenceGrid::clearChords(){ // run the first time to make the row labels and cols
     int ncols = GetNumberCols();

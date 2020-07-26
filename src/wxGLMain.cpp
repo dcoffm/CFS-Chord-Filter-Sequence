@@ -23,23 +23,18 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
 
-    //EVT_KEY_DOWN(wxGLFrame::keyPressed)
 END_EVENT_TABLE()
 
 
 // Lay out the GUI
 wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
-    : wxFrame(frame, -1, title,wxPoint(0,0)){
-    //: wxFrame(frame, -1, title,wxDefaultPosition){
+    : wxFrame(frame, -1, title,wxDefaultPosition){
 
-    wxSize sz; // Generic size object for various uses
-    wxGridBagSizer* mainGrid = new wxGridBagSizer(5,5); // Grid containing control menu
-    controlPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,wxDefaultSize, wxTAB_TRAVERSAL, "mainPanel");
-    this->SetSizer(mainGrid);
-    mainGrid->Add(controlPanel,wxGBPosition(0,0),wxGBSpan(1,1),wxALIGN_LEFT,borderSize);
+    int borderSize = 6;
+    int cgCntr = 0; // counter for rows in control grid
 
-    controlGrid = new wxGridBagSizer(); int cgCntr = 0; // counter for rows in control grid
-    controlPanel->SetSizer(controlGrid);
+    wxPanel* controlPanel = new wxPanel(this, wxID_ANY);
+    wxGridBagSizer* controlGrid = new wxGridBagSizer();
 
     buttonLoadSF = new wxButton(controlPanel,ID_buttonLoadSF, "Load Soundfont");
     controlGrid->Add(buttonLoadSF,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
@@ -62,25 +57,17 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     sliderStrum = new wxSlider(controlPanel,ID_sliderStrum,50,0,500);
     controlGrid->Add(sliderStrum,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
-
     // Information output
     wxStaticBoxSizer* infoBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Status");
     controlGrid->Add(infoBox,wxGBPosition(cgCntr++,0),wxGBSpan(1,2),wxLEFT|wxRIGHT|wxBOTTOM|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND, borderSize);
-    infoGrid = new wxGridBagSizer(1, 1);
-    infoBox->Add(infoGrid);
     infoText = new wxStaticText(controlPanel, wxID_ANY, " \n", wxPoint(0,0));
-    infoGrid->Add(infoText, wxGBPosition(0,0), wxGBSpan(1,2), wxALIGN_LEFT|wxALIGN_TOP, 0);
+    infoBox->Add(infoText, wxALIGN_LEFT|wxALIGN_TOP, 0);
 
-    int height = 750;
-    int width = 900;
-    int y0 = 180;
-
-    seqGrid = new SequenceGrid(this,ID_seqGrid,wxPoint(0,y0),wxSize(width,height));
-
-    wxStaticBoxSizer* chordBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Chords");
-    mainGrid->Add(chordBox,wxGBPosition(0,1),wxGBSpan(1,1),wxLEFT|wxRIGHT|wxBOTTOM|wxALIGN_LEFT|wxALIGN_TOP|wxEXPAND, borderSize);
-
-    filterGrid = new FilterGrid(this,ID_filterGrid,wxPoint(width+1,y0),wxSize(width,height));
+    // The Chord Grids
+    seqGrid = new SequenceGrid(this,ID_seqGrid);
+    filterGrid = new FilterGrid(this,ID_filterGrid);
+    seqGrid->sibling = filterGrid;
+    filterGrid->sibling = seqGrid;
 
     // Setting up fluidsynth
     settings = new_fluid_settings();
@@ -92,6 +79,15 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     // load up a default soundfont
     LoadSF("soundfonts\\Timbres Of Heaven GM_GS_XG_SFX V 3.2 Final.sf2");
 
+
+    wxBoxSizer* vertSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* chordSizer = new wxBoxSizer(wxHORIZONTAL);
+    vertSizer->Add(controlPanel,0,wxALIGN_LEFT,borderSize);
+    vertSizer->Add(chordSizer,1,wxEXPAND,0);
+    chordSizer->Add(seqGrid,1,wxEXPAND,0);
+    chordSizer->Add(filterGrid,1,wxEXPAND,0);
+    controlPanel->SetSizer(controlGrid);
+    this->SetSizer(vertSizer);
 
     // create a menu bar
     wxMenuBar* mbar = new wxMenuBar();
@@ -107,11 +103,8 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     SetMenuBar(mbar);
 
     Layout();
-    SetMinSize(mainGrid->Fit(this));
-    SetSize(1700,1000);
-
-    //wxWindow* seqGridWin = seqGrid->GetGridWindow();
-
+    SetMinSize(vertSizer->Fit(this));
+    Maximize();
 }
 
 wxGLFrame::~wxGLFrame(){ }
@@ -136,7 +129,7 @@ void wxGLFrame::OnAbout(wxCommandEvent &event){
 }
 
 void wxGLFrame::SaveFile(wxCommandEvent& event){
-    wxFileDialog d(this,"Save a chord sequence","","","Chord file(*.chord)|*chord",wxFD_SAVE);
+    wxFileDialog d(this,"Save a chord sequence","chords","","Chord file(*.chord)|*chord",wxFD_SAVE);
     if(d.ShowModal() == wxID_OK){
         wxString path = d.GetPath();
         d.GetPath().EndsWith(".chord",&path);
@@ -171,12 +164,7 @@ void wxGLFrame::LoadFile(wxCommandEvent& event){
             return;
         }else{
             seqGrid->clearChords();
-
-            wxString rest;
-            wxString rest2;
-            wxString line;
-            wxString line2;
-            wxString str;
+            wxString rest, rest2, line, line2, str;
             file.ReadAll(&rest);
             while(!rest.IsEmpty()){
                 line = rest.BeforeFirst('\n',&rest2); rest = rest2; // it messes up if you have the same rest destination as the source
@@ -246,13 +234,9 @@ void wxGLFrame::changePreset(wxCommandEvent& event){
 
 // Utility function
 void wxGLFrame::infoPrint(const char* str){
-    //if(controlGrid->GetSize().y>glcan->getHeight()-100){
-    //    wxString temp = "\n";
-    //    info = info.AfterLast(temp.Last());
-    //}
     infoText->SetLabel(str);
-    infoText->Wrap(controlGrid->GetSize().x-2*(borderSize+1));
-    infoGrid->Fit(infoText);
+    //infoText->Wrap(controlGrid->GetSize().x-2*(borderSize+1));
+    //infoBox->Fit(infoText);
     Layout();
 }
 

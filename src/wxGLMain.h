@@ -52,9 +52,6 @@ class wxGLFrame: public wxFrame
             idMenuAbout
         };
 
-        // GUI variables
-        int borderSize = 6;
-
         // fluidsynth stuff
         fluid_settings_t* settings;
         fluid_synth_t* synth;
@@ -76,8 +73,6 @@ class wxGLFrame: public wxFrame
 
         void LoadFile(wxCommandEvent& event);
         void SaveFile(wxCommandEvent& event);
-        //void keyPressed(wxKeyEvent& event);
-        //void keyReleased(wxKeyEvent& event);
 
         void LeftClickMatches(wxGridEvent& evt);
         void RightClickMatches(wxGridEvent& evt);
@@ -98,14 +93,15 @@ class wxGLFrame: public wxFrame
         static const long ID_seqGrid;
 
         // Declarations for widgets
-        wxPanel*        controlPanel;
+        //wxPanel*        controlPanel;
         wxGridBagSizer* controlGrid;
         wxButton*       buttonLoadSF;
         wxChoice*       choicePreset;
         wxStaticText*   textSF;
         wxCheckBox*     checkboxKill;
         wxSlider*       sliderStrum;
-        wxGridBagSizer* infoGrid;
+        //wxGridBagSizer* infoGrid;
+        wxStaticBoxSizer* infoBox;
         wxStaticText*   infoText;
         FilterGrid*     filterGrid;
         SequenceGrid*   seqGrid;
