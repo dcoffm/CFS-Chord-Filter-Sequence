@@ -19,6 +19,7 @@
 #include <wx/generic/grid.h>
 #include <wx/colour.h>
 #include <wx/event.h>
+#include <wx/notebook.h>
 
 // My files
 #include "wxGLApp.h"
@@ -60,52 +61,44 @@ class wxGLFrame: public wxFrame
         int SFID; // id number for soundfont currently loaded
         fluid_preset_t* preset;
         fluid_sfont_t* sf;
-        int strum_delay = 10;
-
 
         // Event callbacks
         void OnClose(wxCloseEvent& event);
         void OnQuit(wxCommandEvent& event);
         void OnAbout(wxCommandEvent& event);
+        void onTab(wxNotebookEvent& event);
         void OnLoadSFButton(wxCommandEvent& event);
         void LoadSF(wxString filepath);
         void changePreset(wxCommandEvent& event);
+        void onKeyDown(wxKeyEvent& event);
 
         void LoadFile(wxCommandEvent& event);
         void SaveFile(wxCommandEvent& event);
 
-        void LeftClickMatches(wxGridEvent& evt);
-        void RightClickMatches(wxGridEvent& evt);
-        void LeftClickSequence(wxGridEvent& evt);
-        void RightClickSequence(wxGridEvent& evt);
-
-        void PlayCellMatches(wxGridEvent& evt);
-        void ToggleCellMatches(wxGridEvent& evt);
-        void PlayCellSequence(wxGridEvent& evt);
-        void ToggleCellSequence(wxGridEvent& evt);
-
         // Widget IDs for things I need info from
         static const long ID_buttonLoadSF;
         static const long ID_choicePreset;
-        static const long ID_checkboxKill;
+        static const long ID_checkboxStrumdir;
         static const long ID_sliderStrum;
         static const long ID_filterGrid;
         static const long ID_seqGrid;
+        static const long ID_notebook;
+        static const long ID_sliderVel;
 
         // Declarations for widgets
-        //wxPanel*        controlPanel;
         wxGridBagSizer* controlGrid;
         wxButton*       buttonLoadSF;
         wxChoice*       choicePreset;
         wxStaticText*   textSF;
-        wxCheckBox*     checkboxKill;
+        wxCheckBox*     checkboxStrumdir;
         wxSlider*       sliderStrum;
-        //wxGridBagSizer* infoGrid;
+        wxSlider*       sliderVel;
         wxStaticBoxSizer* infoBox;
         wxStaticText*   infoText;
         FilterGrid*     filterGrid;
         SequenceGrid*   seqGrid;
-
+        wxBoxSizer*     chordSizer;
+        wxNotebook*     notebook;
 };
 
 #endif // WXGLMAIN_H

@@ -31,14 +31,10 @@ ChordGrid::ChordGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, const 
     CreateGrid(NNotes,1); // first column is a list of all notes
     SetRowLabelSize(wxGRID_AUTOSIZE);
 
-    wxSize sz;
-    int w = 0;
-    int h = 0;
-    h += GetColLabelSize();
-    h += 14*GetDefaultRowSize();
-    w += GetRowLabelSize();
-    w += 5*GetDefaultColSize();
-    SetMinSize(wxSize(w,h));
+    int h = GetColLabelSize() + 14*GetDefaultRowSize();
+    SetMinSize(wxSize(0,h));
+    h = GetColLabelSize() + (topNote-Note("D 5"))*GetDefaultRowSize();
+    Scroll(0,h);
 
     Bind(wxEVT_GRID_CELL_LEFT_CLICK, &ChordGrid::PlayCell, this);
     Bind(wxEVT_GRID_CELL_LEFT_DCLICK, &ChordGrid::PlayCell, this);
@@ -229,8 +225,10 @@ void ChordGrid::PlayCell(wxGridEvent& evt){
 }
 
 void ChordGrid::playChord(int c){
-    if(c==0)
+    if(c==0){
         parent->fluidPlayChord(input);
+    }
+
     else if(c>0 && c<=int(chordList.size())){
         parent->fluidPlayChord(chordList[c-1]);
     }
@@ -260,6 +258,7 @@ SequenceGrid::SequenceGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, 
     Bind(wxEVT_GRID_CELL_RIGHT_DCLICK, &SequenceGrid::ToggleCell, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_CLICK, &SequenceGrid::ColumnRightClick, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_DCLICK, &SequenceGrid::ColumnRightClick, this);
+    //Bind(wxEVT_PAINT, &SequenceGrid::paintSkip, this);
 }
 SequenceGrid::~SequenceGrid(){ }
 
@@ -317,6 +316,7 @@ FilterGrid::FilterGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, cons
     Bind(wxEVT_GRID_CELL_RIGHT_DCLICK, &FilterGrid::ToggleCell, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_CLICK, &FilterGrid::ColumnRightClick, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_DCLICK, &FilterGrid::ColumnRightClick, this);
+    //Bind(wxEVT_PAINT, &FilterGrid::paintSkip, this);
 }
 FilterGrid::~FilterGrid(){ }
 

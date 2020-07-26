@@ -72,7 +72,6 @@ public:
     //FilterGrid* sibling;
     void ColumnRightClick(wxGridEvent& evt);
     void clearChords();
-    //void onScroll(wxScrollWinEvent& event);
 };
 
 

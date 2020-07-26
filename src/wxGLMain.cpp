@@ -9,10 +9,12 @@
 
 const long wxGLFrame::ID_buttonLoadSF = wxNewId();
 const long wxGLFrame::ID_choicePreset = wxNewId();
-const long wxGLFrame::ID_checkboxKill = wxNewId();
+const long wxGLFrame::ID_checkboxStrumdir = wxNewId();
 const long wxGLFrame::ID_sliderStrum = wxNewId();
+const long wxGLFrame::ID_sliderVel = wxNewId();
 const long wxGLFrame::ID_filterGrid = wxNewId();
 const long wxGLFrame::ID_seqGrid = wxNewId();
+const long wxGLFrame::ID_notebook = wxNewId();
 
 BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_CLOSE(wxGLFrame::OnClose)
@@ -22,6 +24,9 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_MENU(idMenuLoad, wxGLFrame::LoadFile)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
+    EVT_NOTEBOOK_PAGE_CHANGED(wxGLFrame::ID_notebook,wxGLFrame::onTab)
+
+    EVT_KEY_DOWN(wxGLFrame::onKeyDown)
 
 END_EVENT_TABLE()
 
@@ -45,17 +50,21 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     choicePreset = new wxChoice(controlPanel,ID_choicePreset);
     controlGrid->Add(choicePreset,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
-    wxStaticText* textKill = new wxStaticText(controlPanel,-1,"Kill notes on new play");
-    controlGrid->Add(textKill,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
-
-    checkboxKill = new wxCheckBox(controlPanel,ID_checkboxKill,"");
-    controlGrid->Add(checkboxKill,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
-    checkboxKill->SetValue(true);
-
     wxStaticText* textStrum = new wxStaticText(controlPanel,-1,"Strum delay");
     controlGrid->Add(textStrum,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
     sliderStrum = new wxSlider(controlPanel,ID_sliderStrum,50,0,500);
     controlGrid->Add(sliderStrum,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
+
+    wxStaticText* textStrumdir = new wxStaticText(controlPanel,-1,"Strum descending");
+    controlGrid->Add(textStrumdir,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
+
+    checkboxStrumdir = new wxCheckBox(controlPanel,ID_checkboxStrumdir,"");
+    controlGrid->Add(checkboxStrumdir,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
+
+    wxStaticText* textVel = new wxStaticText(controlPanel,-1,"MIDI velocity");
+    controlGrid->Add(textVel,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
+    sliderVel = new wxSlider(controlPanel,ID_sliderVel,85,0,127);
+    controlGrid->Add(sliderVel,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
     // Information output
     wxStaticBoxSizer* infoBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Status");
@@ -81,13 +90,22 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
 
 
     wxBoxSizer* vertSizer = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer* chordSizer = new wxBoxSizer(wxHORIZONTAL);
+    chordSizer = new wxBoxSizer(wxHORIZONTAL);
     vertSizer->Add(controlPanel,0,wxALIGN_LEFT,borderSize);
     vertSizer->Add(chordSizer,1,wxEXPAND,0);
     chordSizer->Add(seqGrid,1,wxEXPAND,0);
     chordSizer->Add(filterGrid,1,wxEXPAND,0);
     controlPanel->SetSizer(controlGrid);
     this->SetSizer(vertSizer);
+
+     // Notebook to provide tabs for changing which grid(s) are displayed
+    notebook = new wxNotebook(controlPanel,ID_notebook,wxDefaultPosition,wxSize(200,24),wxNB_TOP);
+    controlGrid->Add(notebook,wxGBPosition(cgCntr++,0),wxGBSpan(1,2),wxLEFT,borderSize);
+    notebook->SetPageSize(wxSize(0,0));
+    wxWindow* dummypage = new wxWindow(notebook,-1);
+    notebook->InsertPage(0,dummypage,"Sequence",false);
+    notebook->InsertPage(1,dummypage,"Filter",false);
+    notebook->InsertPage(2,dummypage,"Both",true);
 
     // create a menu bar
     wxMenuBar* mbar = new wxMenuBar();
@@ -102,7 +120,8 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     mbar->Append(helpMenu, "&Help");
     SetMenuBar(mbar);
 
-    Layout();
+    //Layout();
+    infoPrint("Welcome! Click a note to get started.");
     SetMinSize(vertSizer->Fit(this));
     Maximize();
 }
@@ -126,6 +145,40 @@ void wxGLFrame::OnClose(wxCloseEvent &event) {
 void wxGLFrame::OnAbout(wxCommandEvent &event){
     wxString msg = "Made by\nKeith Coffman, dcoffm5261@gmail.com\n(2020)";
     wxMessageBox(msg, "About");
+}
+
+void wxGLFrame::onKeyDown(wxKeyEvent& event){
+    if(event.ControlDown()){
+        //infoPrint(wxString::Format("%c",event.GetUnicodeKey()));
+        wxCommandEvent temp;
+        switch (event.GetUnicodeKey()){
+        case 'S' :
+            SaveFile(temp);
+            break;
+        case 'L' :
+            LoadFile(temp);
+            break;
+        case 'Z' :
+            // TODO: simple undo
+            break;
+        }
+    }
+}
+
+void wxGLFrame::onTab(wxNotebookEvent& event){
+    int s2 = event.GetSelection();
+    int w1,w2,h1,h2;
+    seqGrid->GetSize(&w1,&h1);
+    filterGrid->GetSize(&w2,&h2);
+    seqGrid->SetMaxSize(wxSize(10000,10000));
+    filterGrid->SetMaxSize(wxSize(10000,10000));
+    if(s2==0)
+        filterGrid->SetMaxSize(wxSize(0,10000));
+    if(s2==1)
+        seqGrid->SetMaxSize(wxSize(0,10000));
+
+    Layout();
+    event.Skip();
 }
 
 void wxGLFrame::SaveFile(wxCommandEvent& event){
@@ -241,17 +294,22 @@ void wxGLFrame::infoPrint(const char* str){
 }
 
 void wxGLFrame::fluidPlayNote(Note& note){
-    if(checkboxKill->GetValue())
-        fluidEndChord();
-    fluid_synth_noteon(synth, 0, note.val, note.vel);
+    fluidEndChord();
+    fluid_synth_noteon(synth, 0, note.val, sliderVel->GetValue());
 }
 
 void wxGLFrame::fluidPlayChord(Chorde& chord){
-    if(checkboxKill->GetValue())
-        fluidEndChord();
-    for(size_t i=0;i<chord.notes.size();i++){
-        fluid_synth_noteon(synth, 0, chord.notes[i].val, chord.notes[i].vel);
-        Sleep(sliderStrum->GetValue()); // offset on note start for strumming effect
+    fluidEndChord();
+    if(checkboxStrumdir->GetValue()){
+        for(auto i=chord.notes.rbegin(); i!=chord.notes.rend(); ++i){
+            fluid_synth_noteon(synth, 0, (*i).val, sliderVel->GetValue());
+            Sleep(sliderStrum->GetValue()); // offset on note start for strumming effect
+        }
+    }else{
+        for(size_t i=0;i<chord.notes.size();i++){
+            fluid_synth_noteon(synth, 0, chord.notes[i].val, sliderVel->GetValue());
+            Sleep(sliderStrum->GetValue());
+        }
     }
 }
 
