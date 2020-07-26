@@ -155,7 +155,7 @@ void wxGLFrame::onKeyDown(wxKeyEvent& event){
         case 'S' :
             SaveFile(temp);
             break;
-        case 'L' :
+        case 'D' :
             LoadFile(temp);
             break;
         case 'Z' :
