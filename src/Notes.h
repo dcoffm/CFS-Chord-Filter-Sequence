@@ -1,3 +1,9 @@
+/***************************************************************
+ * Name:      Notes.h
+ * Purpose:   Utility classes for representing notes and chords
+ * Author:    Keith Coffman (dcoffm5261@gmail.com)
+ * Created:   2020-07-22
+ **************************************************************/
 
 #ifndef NOTES_H
 #define NOTES_H
@@ -145,7 +151,14 @@ static const int chordSteps[][5] = {
 
 struct Note{
 
-    Note(int inVal=0, int inVel=100){val = inVal; vel=inVel;}
+    Note(int inVal=0, int inVel=100){
+        val = inVal;
+        vel=inVel;
+        if(val>127)
+           val=127;
+        if(vel>127)
+           vel=127;
+        }
     Note(wxString str, int inVel=100){
         vel = inVel;
         val = toInt(str);
@@ -213,29 +226,29 @@ struct Note{
         wxString str;
         switch (chroma()){
         case 0 :
-            str =            "C ";       break;
+            str =            "C ";      break;
         case 1 :
             str = (acc=='b'?"Db":"C#"); break;
         case 2 :
-            str =            "D ";       break;
+            str =            "D ";      break;
         case 3 :
             str = (acc=='b'?"Eb":"D#"); break;
         case 4 :
-            str =            "E ";       break;
+            str =            "E ";      break;
         case 5 :
-            str =            "F ";       break;
+            str =            "F ";      break;
         case 6 :
             str = (acc=='b'?"Gb":"F#"); break;
         case 7 :
-            str =            "G ";       break;
+            str =            "G ";      break;
         case 8 :
             str = (acc=='b'?"Ab":"G#"); break;
         case 9 :
-            str =            "A ";       break;
+            str =            "A ";      break;
         case 10:
             str = (acc=='b'?"Bb":"A#"); break;
         case 11:
-            str =            "B ";       break;
+            str =            "B ";      break;
         }
         if(addOct)
             str << octave();
@@ -266,7 +279,10 @@ struct Note{
             chrom =  9;
         if(str.Left(1)=="B")
             chrom = 11;
-        return chrom+accidental + 12*(oct+1);
+        int result = chrom+accidental + 12*(oct+1);
+        if(result>127)
+            result = 127;
+        return result;
     }
     int toInt() const{
         return toInt(this->toString());
@@ -276,14 +292,15 @@ struct Note{
 typedef std::vector<Note> Notes;
 
 struct Chorde{
-    Notes notes;            // the notes to be played when articulating this chord
-    Note root;              // note stored only for intervals and labeling purposes; may or may not be articulated
-    ChordType ct = CHORD_UNK;   // defines what notes are possible for articulation
-    bool chromaList[12] = {false,false,false,false,false,false,false,false,false,false,false,false}; // a list of which chroma are present in the chord. Alternative to definition from root + chord type
-    wxString label = "";        // user-defined label for the chord. Defaults to chordNames[ct],
+    Notes notes;                // The notes to be played when articulating this chord.
+    Note root;                  // Note stored only for intervals and labeling purposes; may or may not be articulated.
+    ChordType ct = CHORD_UNK;   // Defines what notes are possible for articulation.
+    bool chromaList[12] = {false,false,false,false,false,false,false,false,false,false,false,false};
+                                // A list of which chroma are present in the chord. Alternative to definition from root + chord type.
+    wxString label = "";        // User-defined label for the chord. Defaults to chordNames[ct]
 
     Chorde(){ }
-    Chorde(Note& rootIn,ChordType ctIn){
+    Chorde(Note& rootIn,ChordType ctIn,char accent='#'){
         root = rootIn;
         ct = ctIn;
         for(int i=0; i<5; i++){
@@ -291,16 +308,16 @@ struct Chorde{
             chromaList[thisnote.chroma()] = true;
             insertNote(thisnote);
         }
-        defaultLabel();
+        defaultLabel(accent);
     }
 
-    void defaultLabel(){
-        label = root.toString() + " " + chordNames[ct];
+    void defaultLabel(char accent='#'){
+        label = root.toString(false,accent) + " " + chordNames[ct];
     }
     void insertNote(Note in){
         bool inserted=false;
         for(size_t i=0; i<notes.size(); i++){
-            if(in == notes[i]){ // no duplicates
+            if(in == notes[i]){ // No duplicates
                 inserted=true;
                 break;
             }
@@ -323,45 +340,5 @@ struct Chorde{
             }
         }
     }
-
-
 };
-
-/*
-const int priority[] = {
-    1,
-    1,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-    ,
-};*/
 #endif

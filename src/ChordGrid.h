@@ -1,3 +1,9 @@
+/***************************************************************
+ * Name:      ChordGrid.cpp
+ * Purpose:   Chord grids to handle note input, filtering, copy/pasting
+ * Author:    Keith Coffman (dcoffm5261@gmail.com)
+ * Created:   2020-07-22
+ **************************************************************/
 
 #ifndef CHORDGRID_H
 #define CHORDGRID_H

@@ -1,6 +1,6 @@
 /***************************************************************
  * Name:      wxGLMain.cpp
- * Purpose:
+ * Purpose:   Main window of CSF UI
  * Author:    Keith Coffman (dcoffm5261@gmail.com)
  * Created:   2018-06-22
  **************************************************************/
@@ -10,6 +10,7 @@
 const long wxGLFrame::ID_buttonLoadSF = wxNewId();
 const long wxGLFrame::ID_choicePreset = wxNewId();
 const long wxGLFrame::ID_checkboxStrumdir = wxNewId();
+const long wxGLFrame::ID_checkboxChordOrder = wxNewId();
 const long wxGLFrame::ID_sliderStrum = wxNewId();
 const long wxGLFrame::ID_sliderVel = wxNewId();
 const long wxGLFrame::ID_filterGrid = wxNewId();
@@ -22,7 +23,9 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_MENU(idMenuAbout, wxGLFrame::OnAbout)
     EVT_MENU(idMenuSave, wxGLFrame::SaveFile)
     EVT_MENU(idMenuLoad, wxGLFrame::LoadFile)
+    EVT_CHECKBOX(wxGLFrame::ID_checkboxChordOrder,wxGLFrame::onChordOrder)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
+    EVT_SLIDER(wxGLFrame::ID_sliderVel,wxGLFrame::onSliderVel)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
     EVT_NOTEBOOK_PAGE_CHANGED(wxGLFrame::ID_notebook,wxGLFrame::onTab)
 
@@ -35,10 +38,12 @@ END_EVENT_TABLE()
 wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     : wxFrame(frame, -1, title,wxDefaultPosition){
 
+    LoadSettings(); // Load program options from config.ini
+
     int borderSize = 6;
     int cgCntr = 0; // counter for rows in control grid
 
-    wxPanel* controlPanel = new wxPanel(this, wxID_ANY);
+    controlPanel = new wxPanel(this, wxID_ANY);
     wxGridBagSizer* controlGrid = new wxGridBagSizer();
 
     buttonLoadSF = new wxButton(controlPanel,ID_buttonLoadSF, "Load Soundfont");
@@ -50,6 +55,11 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     choicePreset = new wxChoice(controlPanel,ID_choicePreset);
     controlGrid->Add(choicePreset,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
+    wxStaticText* textVel = new wxStaticText(controlPanel,-1,"MIDI velocity");
+    controlGrid->Add(textVel,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
+    sliderVel = new wxSlider(controlPanel,ID_sliderVel,85,0,127);
+    controlGrid->Add(sliderVel,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
+
     wxStaticText* textStrum = new wxStaticText(controlPanel,-1,"Strum delay");
     controlGrid->Add(textStrum,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
     sliderStrum = new wxSlider(controlPanel,ID_sliderStrum,50,0,500);
@@ -57,14 +67,13 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
 
     wxStaticText* textStrumdir = new wxStaticText(controlPanel,-1,"Strum descending");
     controlGrid->Add(textStrumdir,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
-
     checkboxStrumdir = new wxCheckBox(controlPanel,ID_checkboxStrumdir,"");
     controlGrid->Add(checkboxStrumdir,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
-    wxStaticText* textVel = new wxStaticText(controlPanel,-1,"MIDI velocity");
-    controlGrid->Add(textVel,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
-    sliderVel = new wxSlider(controlPanel,ID_sliderVel,85,0,127);
-    controlGrid->Add(sliderVel,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
+    wxStaticText* textChordOrder = new wxStaticText(controlPanel,-1,"Order chords by root");
+    controlGrid->Add(textChordOrder,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
+    checkboxChordOrder = new wxCheckBox(controlPanel,ID_checkboxChordOrder,"");
+    controlGrid->Add(checkboxChordOrder,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
     // Information output
     wxStaticBoxSizer* infoBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Status");
@@ -77,17 +86,6 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     filterGrid = new FilterGrid(this,ID_filterGrid);
     seqGrid->sibling = filterGrid;
     filterGrid->sibling = seqGrid;
-
-    // Setting up fluidsynth
-    settings = new_fluid_settings();
-    synth = new_fluid_synth(settings);
-    player = new_fluid_player(synth);
-    fluid_settings_setstr(settings, "audio.driver", "dsound");
-    adriver = new_fluid_audio_driver(settings, synth);
-
-    // load up a default soundfont
-    LoadSF("soundfonts\\Timbres Of Heaven GM_GS_XG_SFX V 3.2 Final.sf2");
-
 
     wxBoxSizer* vertSizer = new wxBoxSizer(wxVERTICAL);
     chordSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -103,9 +101,9 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     controlGrid->Add(notebook,wxGBPosition(cgCntr++,0),wxGBSpan(1,2),wxLEFT,borderSize);
     notebook->SetPageSize(wxSize(0,0));
     wxWindow* dummypage = new wxWindow(notebook,-1);
-    notebook->InsertPage(0,dummypage,"Sequence",false);
-    notebook->InsertPage(1,dummypage,"Filter",false);
-    notebook->InsertPage(2,dummypage,"Both",true);
+    notebook->InsertPage(0,dummypage,"Sequence",s.defaultTab==1);
+    notebook->InsertPage(1,dummypage,"Filter",s.defaultTab==2);
+    notebook->InsertPage(2,dummypage,"Both",s.defaultTab==3);
 
     // create a menu bar
     wxMenuBar* mbar = new wxMenuBar();
@@ -121,9 +119,24 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     SetMenuBar(mbar);
 
     //Layout();
-    infoPrint("Welcome! Click a note to get started.");
+    infoPrint("Starting fluidsynth...");
     SetMinSize(vertSizer->Fit(this));
-    Maximize();
+    if(s.startMaximized==1)
+        Maximize();
+    else if(s.startMaximized==-1)
+        Iconize();
+
+
+    // Setting up fluidsynth
+    fluid_settings = new_fluid_settings();
+    synth = new_fluid_synth(fluid_settings);
+    player = new_fluid_player(synth);
+    fluid_settings_setstr(fluid_settings, "audio.driver", "dsound");
+    adriver = new_fluid_audio_driver(fluid_settings, synth);
+    LoadSF(s.soundfontDefault);
+    fluid_synth_program_select(synth,0,SFID,s.soundfontBank,s.soundfontNum);
+
+    infoPrint("Welcome! Click a note to get started.");
 }
 
 wxGLFrame::~wxGLFrame(){ }
@@ -132,14 +145,14 @@ void wxGLFrame::OnQuit(wxCommandEvent &event){
     delete_fluid_audio_driver(adriver);
     delete_fluid_player(player);
     delete_fluid_synth(synth);
-    delete_fluid_settings(settings);
+    delete_fluid_settings(fluid_settings);
     Destroy();
 }
 void wxGLFrame::OnClose(wxCloseEvent &event) {
     delete_fluid_audio_driver(adriver);
     delete_fluid_player(player);
     delete_fluid_synth(synth);
-    delete_fluid_settings(settings);
+    delete_fluid_settings(fluid_settings);
     Destroy();
 }
 void wxGLFrame::OnAbout(wxCommandEvent &event){
@@ -165,6 +178,11 @@ void wxGLFrame::onKeyDown(wxKeyEvent& event){
     }
 }
 
+void wxGLFrame::onChordOrder(wxCommandEvent& event){
+    s.chordOrder = checkboxChordOrder->IsChecked();
+    filterGrid->applyFilter();
+}
+
 void wxGLFrame::onTab(wxNotebookEvent& event){
     int s2 = event.GetSelection();
     int w1,w2,h1,h2;
@@ -182,7 +200,7 @@ void wxGLFrame::onTab(wxNotebookEvent& event){
 }
 
 void wxGLFrame::SaveFile(wxCommandEvent& event){
-    wxFileDialog d(this,"Save a chord sequence","chords","","Chord file(*.chord)|*chord",wxFD_SAVE);
+    wxFileDialog d(this,"Save a chord sequence",s.savePath,"","Chord file(*.chord)|*chord",wxFD_SAVE);
     if(d.ShowModal() == wxID_OK){
         wxString path = d.GetPath();
         d.GetPath().EndsWith(".chord",&path);
@@ -197,7 +215,7 @@ void wxGLFrame::SaveFile(wxCommandEvent& event){
                 str  = sequence[i].label;
                 str += "\t";
                 for(size_t j=0; j<sequence[i].notes.size(); j++){
-                    str += sequence[i].notes[j].toString(true) +",";
+                    str += sequence[i].notes[j].toString(true,s.accent) +",";
                 }
                 str += "\n";
                 file.Write(str);
@@ -209,7 +227,7 @@ void wxGLFrame::SaveFile(wxCommandEvent& event){
 }
 
 void wxGLFrame::LoadFile(wxCommandEvent& event){
-    wxFileDialog d(this,"Select a chord file","chords","","Chord file(*.chord)|*chord",wxFD_OPEN);
+    wxFileDialog d(this,"Load a chord file",s.savePath,"","Chord file(*.chord)|*chord",wxFD_OPEN);
     if(d.ShowModal() == wxID_OK){
         wxFile file(d.GetPath(), wxFile::read);
         if(!file.IsOpened()){
@@ -243,6 +261,7 @@ void wxGLFrame::OnLoadSFButton(wxCommandEvent& event){
     wxFileDialog d(this,"Select a soundfont file","soundfonts","","(*.sf2)|*.sf2",wxFD_OPEN);
     if(d.ShowModal() == wxID_OK){
         LoadSF(d.GetPath());
+        // TODO: layout after string changes
         return;
     }
     infoPrint("Failed to open file.");
@@ -256,24 +275,42 @@ void wxGLFrame::LoadSF(wxString filepath){
         choicePreset->Clear();
         sf = fluid_synth_get_sfont_by_id(synth,SFID);
         fluid_sfont_iteration_start(sf);
+        int cntr = 0;
+        int sel = 0;
+        int banknum0 = 0;
+        int num0 = 0;
         do{
             preset = fluid_sfont_iteration_next(sf); // will return null if no more soundfonts left
             if(preset != NULL){
+                int banknum = fluid_preset_get_banknum(preset);
+                int num = fluid_preset_get_num(preset);
+                if(cntr==0){
+                    banknum0 = banknum;
+                    num0 = num;
+                }
+                if(banknum==s.soundfontBank && num==s.soundfontNum)
+                    sel = cntr;
                 wxString str = "";
-                str += wxString::Format("%03u",fluid_preset_get_banknum(preset));
+                str += wxString::Format("%03u",banknum);
                 str += "-";
-                str += wxString::Format("%03u",fluid_preset_get_num(preset));
+                str += wxString::Format("%03u",num);
                 str += " ";
                 str += fluid_preset_get_name(preset);
                 choicePreset->Append(str);
+                cntr++;
             }
         }while(preset!= NULL);
-        choicePreset->SetSelection(0);
+        choicePreset->SetSelection(sel);
+        if(sel==0){ // If we didn't find the preset corresponding to s.x then set them to the first one in the soundfont
+            s.soundfontBank = banknum0;
+            s.soundfontNum = num0;
+        }
+
         wxCommandEvent temp = wxCommandEvent();
         changePreset(temp);
         return;
     }
-    wxMessageBox( wxT("Failed to load soundfont") );
+    wxMessageBox("Failed to load soundfont");
 }
 
 void wxGLFrame::changePreset(wxCommandEvent& event){
@@ -282,7 +319,9 @@ void wxGLFrame::changePreset(wxCommandEvent& event){
     wxString str = choicePreset->GetString(choicePreset->GetSelection());
     str.Left(3).ToLong(&banknum);
     str.Mid(4,3).ToLong(&num);
-    fluid_synth_program_select(synth,0,SFID,int(banknum),int(num));
+    s.soundfontBank = banknum;
+    s.soundfontNum = num;
+    fluid_synth_program_select(synth,0,SFID,s.soundfontBank,s.soundfontNum);
 }
 
 // Utility function
@@ -293,21 +332,25 @@ void wxGLFrame::infoPrint(const char* str){
     Layout();
 }
 
+void wxGLFrame::onSliderVel(wxCommandEvent& evt){
+    s.velocity = sliderVel->GetValue();
+}
+
 void wxGLFrame::fluidPlayNote(Note& note){
     fluidEndChord();
-    fluid_synth_noteon(synth, 0, note.val, sliderVel->GetValue());
+    fluid_synth_noteon(synth, 0, note.val, s.velocity);
 }
 
 void wxGLFrame::fluidPlayChord(Chorde& chord){
     fluidEndChord();
     if(checkboxStrumdir->GetValue()){
         for(auto i=chord.notes.rbegin(); i!=chord.notes.rend(); ++i){
-            fluid_synth_noteon(synth, 0, (*i).val, sliderVel->GetValue());
+            fluid_synth_noteon(synth, 0, (*i).val, s.velocity);
             Sleep(sliderStrum->GetValue()); // offset on note start for strumming effect
         }
     }else{
         for(size_t i=0;i<chord.notes.size();i++){
-            fluid_synth_noteon(synth, 0, chord.notes[i].val, sliderVel->GetValue());
+            fluid_synth_noteon(synth, 0, chord.notes[i].val, s.velocity);
             Sleep(sliderStrum->GetValue());
         }
     }
@@ -319,4 +362,170 @@ void wxGLFrame::fluidEndChord(){
     }
 }
 
+void wxGLFrame::LoadSettings(){
 
+    // open file
+    wxFile file("config.ini", wxFile::read);
+    if(!file.IsOpened()){
+        wxMessageBox("Failed to open settings file.");
+        return;
+    }
+
+    wxString rest, line, label, val, temp;
+    file.ReadAll(&rest);
+    file.Close();
+
+    while(!rest.IsEmpty()){
+        line = rest.BeforeFirst('\n',&temp); rest = temp;
+        label = line.BeforeFirst('=',&temp).Trim();
+        val = temp.AfterLast('=').Trim().Trim(false);
+
+        bool recognized = false;
+        if(!label.IsEmpty()){
+            if(label.IsSameAs("Saves path",false)){
+                recognized = true;
+                wxFileName p(val);
+                if(!p.IsDir())
+                    wxMessageBox(wxString::Format("Selected saves path is not a directory: '%s'",val));
+                else if(!p.DirExists())
+                    wxMessageBox(wxString::Format("Selected saves path does not exist: '%s'",val));
+                else if(!p.IsDirReadable())
+                    wxMessageBox(wxString::Format("Selected saves path is not readable: '%s'",val));
+                else if(!p.IsDirWritable())
+                    wxMessageBox(wxString::Format("Selected saves path is not writable: '%s'",val));
+                else
+                    s.savePath = val;
+            }
+            if(label.IsSameAs("Soundfont path",false)){
+                recognized = true;
+                wxFileName p(val);
+                if(!p.IsDir())
+                    wxMessageBox(wxString::Format("Selected soundfont path is not a directory: '%s'",val));
+                else if(!p.DirExists())
+                    wxMessageBox(wxString::Format("Selected soundfont path does not exist: '%s'",val));
+                else if(!p.IsDirReadable())
+                    wxMessageBox(wxString::Format("Program lacks permission to read specified soundfont path: '%s'",val));
+                else if(!p.IsDirWritable())
+                    wxMessageBox(wxString::Format("Program lacks permission to write to specified soundfont path: '%s'",val));
+                else
+                    s.soundfontPath = val;
+            }
+            if(label.IsSameAs("Soundfont default",false)){
+                recognized = true;
+                wxFileName p(val);
+                if(!p.FileExists())
+                    wxMessageBox(wxString::Format("Selected soundfont does not exist: '%s'",val));
+                else if(!p.IsFileReadable())
+                    wxMessageBox(wxString::Format("Program lacks permission to read specified soundfont file: '%s'",val));
+                else{
+                    if(p.IsRelative())
+                        p.MakeAbsolute(wxGetCwd());
+                    s.soundfontDefault = p.GetFullPath();
+                }
+            }
+            if(label.IsSameAs("Soundfont preset",false)){
+                recognized = true;
+                long banknum = 3;
+                long num = 4;
+                bool valid = val.Left(3).ToLong(&banknum);
+                valid = valid && val.Mid(4,3).ToLong(&num);
+                if(valid)
+                    valid = valid && (banknum>=0 && banknum<128 && num>=0 && num<128);
+                if(valid){
+                    s.soundfontBank = banknum;
+                    s.soundfontNum = num;
+                }else
+                    wxMessageBox(wxString::Format("Invalid soundfont preset specified: %s",val));
+            }
+            if(label.IsSameAs("Soundfont velocity",false)){
+                recognized = true;
+                long vel = 85;
+                bool valid = val.ToLong(&vel);
+                if(valid)
+                    valid = valid && (vel>=0 && vel<128);
+                if(valid)
+                    s.velocity = vel;
+                else
+                    wxMessageBox(wxString::Format("Invalid velocity specified: %s",val));
+            }
+            if(label.IsSameAs("Start maximized",false)){
+                recognized = true;
+                long n = 1;
+                bool valid = val.ToLong(&n);
+                if(valid)
+                    valid = (-2<n && n<2);
+                if(valid)
+                    s.startMaximized = n;
+                else
+                    wxMessageBox(wxString::Format("Invalid window option: %s",val));
+            }
+            if(label.IsSameAs("Default tab",false)){
+                recognized = true;
+                long n = 1;
+                bool valid = val.ToLong(&n);
+                if(valid)
+                    valid = (0<n && n<4);
+                if(valid)
+                    s.defaultTab = n;
+                else
+                    wxMessageBox(wxString::Format("Invalid tab specified: %s",val));
+            }
+            if(label.IsSameAs("Note naming",false)){
+                recognized = true;
+                if(val.GetChar(0)=='b')
+                    s.accent = 'b';
+                else if(val.GetChar(0)=='#')
+                    s.accent = '#';
+                else
+                    wxMessageBox("Note naming must be either flat ( b ) or sharp ( # )");
+            }
+            if(label.IsSameAs("Chord order",false)){
+                recognized = true;
+                long n = 1;
+                bool valid = val.ToLong(&n);
+                if(valid)
+                    valid = (0<=n && n<2);
+                if(valid)
+                    s.chordOrder = n;
+                else
+                    wxMessageBox(wxString::Format("Chord order must be 0 or 1 (chord- or root-sorted): %s",val));
+            }
+            if(label.IsSameAs("Top note",false)){
+                recognized = true;
+                Note n(val);
+                if(n>127 || n<0)
+                    wxMessageBox("Note range must fall within 0 to 127 for MIDI purposes");
+                else
+                    s.topNote = n;
+            }
+            if(label.IsSameAs("Bottom note",false)){
+                recognized = true;
+                //Note n (val.Left(3));
+                Note n(val);
+                if(n>127 || n<0)
+                    wxMessageBox("Note range must fall within 0 to 127 for MIDI purposes");
+                else if(n>s.topNote){
+                    wxMessageBox("Lowest note must be lower than highest note.");
+                    s.botNote = 0;
+                }
+                else
+                    s.botNote = n;
+            }
+
+            if(label.IsSameAs("...",false)){
+                recognized = true;
+            }
+
+            if(!recognized)
+                wxMessageBox(wxString::Format("Unrecognized option '%s'",label));
+        }
+
+
+    }
+
+}
+
+    // read a line
+    // parse label (left hand side) and value (right hand side)
+    // decide if the label means anything
+    // If so, validate the value and apply it to the program settings

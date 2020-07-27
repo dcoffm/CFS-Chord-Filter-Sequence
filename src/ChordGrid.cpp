@@ -1,4 +1,9 @@
-
+/***************************************************************
+ * Name:      ChordGrid.cpp
+ * Purpose:   Chord grids to handle note input, filtering, copy/pasting
+ * Author:    Keith Coffman (dcoffm5261@gmail.com)
+ * Created:   2020-07-22
+ **************************************************************/
 
 #include "ChordGrid.h"
 #include "Notes.h"
@@ -12,6 +17,10 @@ ChordGrid::ChordGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, const 
 {
     parent = parnt;
     thisWin = GetGridWindow();
+
+    topNote = parent->s.topNote;
+    botNote = parent->s.botNote;
+    NNotes = topNote-botNote+1;
 
     DisableDragGridSize();
     DisableDragColSize();
@@ -116,7 +125,7 @@ void ChordGrid::paintInput(){
             SetRowLabelValue(r, wxString::Format("%i",rownote.octave()) );
         else
             SetRowLabelValue(r,wxEmptyString);
-        SetCellValue(r,0,rownote.toString());
+        SetCellValue(r,0,rownote.toString(false,parent->s.accent));
 
         // determine if note is to be painted green
         bool paint = false;
@@ -140,8 +149,9 @@ void ChordGrid::paintCol(int c){
     for(int k=0; k<12; k++){    // paint the text for all cells sharing the chroma, and reset the background colors
         wxString text = "";
         if(chord.chromaList[k])
-            text = Note(k).toString();
-        for(int r=(12-k)%12; r<GetNumberRows(); r+=12){
+            text = Note(k).toString(false,parent->s.accent);
+        //for(int r=(12-k)%12; r<GetNumberRows(); r+=12){
+        for(int r=(12-k+topNote.chroma())%12; r<GetNumberRows(); r+=12){
             SetCellValue(r,c,text);
             SetCellBackgroundColour(r,c,unselColor);
         }
@@ -355,12 +365,17 @@ void FilterGrid::applyFilter(){
     clearChords();
 
     if(input.notes.size()>0){
-    for(int i=CHORD_M; i!=CHORD_UNK; i++){
-        for(int j=-6; j<6; j++){ // choose j'th note as root. Does it find all the others?
+        int i0 = CHORD_M;
+        int j0 = -6;
+        int imax = CHORD_UNK;
+        int jmax = 6;
+        int j=j0;
+        int i=i0;
+        while(true){
 
+            // choose j'th note as root. Does it find all the others?
             Note rootNote = input.notes[0]+j;
-
-            Chorde thisChord(rootNote,static_cast<ChordType>(i));
+            Chorde thisChord(rootNote,static_cast<ChordType>(i),parent->s.accent);
 
             bool containsInput = false;
             for(size_t k=0; k<input.notes.size(); k++){
@@ -394,8 +409,35 @@ void FilterGrid::applyFilter(){
                     chordList.push_back(thisChord);
                 }
             }
+
+            // Option-based loop nesting (instead of writing a reordering function...)
+
+            // Chord type ordering
+            if(parent->s.chordOrder==0){
+                j++;
+                if(j==jmax){
+                    j = j0;
+                    i++;
+                    if(i==imax)
+                        break;
+                }
+            }else{  // Root ordering
+                i++;
+                if(i==imax){
+                    i = i0;
+                    j++;
+                    if(j==jmax)
+                        break;
+                }
+            }
         }
+    }
+
+    /*  The old loop:
+    for(int i=CHORD_M; i!=CHORD_UNK; i++){
+        for(int j=-6; j<6; j++){ // choose j'th note as root. Does it find all the others?
     }}
+    */
 
     AppendCols(chordList.size());
 
@@ -409,8 +451,8 @@ void FilterGrid::applyFilter(){
 
         for(int k=0; k<12; k++){    // paint the text for all cells sharing the chroma, and reset the background colors
             if(chord.chromaList[k]){
-                wxString text = Note(k).toString();
-                for(int r=(12-k)%12; r<GetNumberRows(); r+=12){
+                wxString text = Note(k).toString(false,parent->s.accent);
+                for(int r=(12-k+topNote.chroma())%12; r<GetNumberRows(); r+=12){
                     SetCellValue(r,c,text);
                 }
             }
