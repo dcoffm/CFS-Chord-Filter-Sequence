@@ -43,7 +43,7 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     int borderSize = 6;
     int cgCntr = 0; // counter for rows in control grid
 
-    controlPanel = new wxPanel(this, wxID_ANY);
+    controlPanel = new wxPanel(this, wxID_ANY,wxDefaultPosition,wxDefaultSize);
     wxGridBagSizer* controlGrid = new wxGridBagSizer();
 
     buttonLoadSF = new wxButton(controlPanel,ID_buttonLoadSF, "Load Soundfont");
@@ -82,8 +82,8 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     infoBox->Add(infoText, wxALIGN_LEFT|wxALIGN_TOP, 0);
 
     // The Chord Grids
-    seqGrid = new SequenceGrid(this,ID_seqGrid);
-    filterGrid = new FilterGrid(this,ID_filterGrid);
+    seqGrid = new SequenceGrid(this,ID_seqGrid,wxDefaultPosition,wxDefaultSize,wxBORDER_SIMPLE);
+    filterGrid = new FilterGrid(this,ID_filterGrid,wxDefaultPosition,wxDefaultSize,wxBORDER_SIMPLE);
     seqGrid->sibling = filterGrid;
     filterGrid->sibling = seqGrid;
 
@@ -97,7 +97,7 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     this->SetSizer(vertSizer);
 
      // Notebook to provide tabs for changing which grid(s) are displayed
-    notebook = new wxNotebook(controlPanel,ID_notebook,wxDefaultPosition,wxSize(200,24),wxNB_TOP);
+    notebook = new wxNotebook(controlPanel,ID_notebook,wxDefaultPosition,wxSize(200,22),wxNB_TOP);
     controlGrid->Add(notebook,wxGBPosition(cgCntr++,0),wxGBSpan(1,2),wxLEFT,borderSize);
     notebook->SetPageSize(wxSize(0,0));
     wxWindow* dummypage = new wxWindow(notebook,-1);
@@ -135,6 +135,12 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     adriver = new_fluid_audio_driver(fluid_settings, synth);
     LoadSF(s.soundfontDefault);
     fluid_synth_program_select(synth,0,SFID,s.soundfontBank,s.soundfontNum);
+
+    int gray = 240;
+    controlPanel->SetBackgroundColour(wxColor(gray,gray,gray));
+    this->SetBackgroundColour(wxColor(gray,gray,gray));
+    //controlPanel->SetBackgroundColour(wxSYS_COLOUR_WINDOWFRAME);
+    //this->SetBackgroundColour(wxSYS_COLOUR_WINDOWFRAME);
 
     infoPrint("Welcome! Click a note to get started.");
 }

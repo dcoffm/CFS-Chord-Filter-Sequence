@@ -1,0 +1,4 @@
+
+aaaa ICON "rsrc/icon_16.ico"
+aaab ICON "rsrc/icon_32.ico"
+#include "wx/msw/wx.rc"

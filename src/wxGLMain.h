@@ -44,8 +44,10 @@ struct ProgramSettings{
     int chordOrder = 0;
     Note topNote = wxString("C 8");
     Note botNote = wxString("C 0");
-    wxColor selColor = wxColor(34,177,76);
-    wxColor rootColor = wxColor(20,107,47);
+    //wxColor selColor = wxColor(34,177,76);
+    //wxColor rootColor = wxColor(20,107,47);
+    wxColor selColor = wxColor(255,201,14);
+    wxColor rootColor = wxColor(251,160,19);
     wxColor unselColor = wxColor(255,255,255);
     wxColor textColor = wxColor(0,0,0);
 };

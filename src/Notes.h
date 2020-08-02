@@ -11,21 +11,6 @@
 #include <wx/string.h>
 #include <vector>
 
-enum noteNum{
-    NOTE_C = 0,
-    NOTE_Db,
-    NOTE_D,
-    NOTE_Eb,
-    NOTE_E,
-    NOTE_F,
-    NOTE_Gb,
-    NOTE_G,
-    NOTE_Ab,
-    NOTE_A,
-    NOTE_Bb,
-    NOTE_B
-};
-
 enum ChordType{
     CHORD_M = 0,
     CHORD_m,

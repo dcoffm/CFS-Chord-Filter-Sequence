@@ -27,6 +27,7 @@ ChordGrid::ChordGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, const 
     DisableDragRowSize();
     EnableEditing(false);
     SetCellHighlightPenWidth(0);
+    SetLabelBackgroundColour(wxColour(244,237,202));
     SetDefaultRenderer(new MyGridCellRenderer);
     SetDefaultCellAlignment(wxALIGN_CENTER,wxALIGN_CENTER);
     SetScrollbars(1,1,1,1); // not sure how to predict noUnits but hopefully that updates automatically when the table changes?
@@ -55,9 +56,6 @@ ChordGrid::ChordGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, const 
     Bind(wxEVT_SCROLLWIN_PAGEDOWN, &SequenceGrid::onScroll, this);
     Bind(wxEVT_SCROLLWIN_PAGEUP, &SequenceGrid::onScroll, this);
 
-    //Bind(wxEVT_MOTION, &ChordGrid::onMouseMove, this);
-    //Bind(wxEVT_MIDDLE_DOWN, &ChordGrid::mouseMDown, this);
-    //Bind(wxEVT_MIDDLE_UP, &ChordGrid::mouseMUp, this);
     thisWin->Connect(wxID_ANY,wxEVT_MOTION,wxMouseEventHandler(ChordGrid::onMouseMove),NULL,this);
     thisWin->Connect(wxID_ANY,wxEVT_MIDDLE_DOWN,wxMouseEventHandler(ChordGrid::mouseMDown),NULL,this);
     thisWin->Connect(wxID_ANY,wxEVT_MIDDLE_UP,wxMouseEventHandler(ChordGrid::mouseMUp),NULL,this);
@@ -121,7 +119,7 @@ void ChordGrid::paintInput(){
     SetColLabelValue(0,input.label);
     for(int r=0; r<NNotes; r++){
         Note rownote = topNote-r;
-        if(rownote.chroma()==NOTE_C)
+        if(rownote.chroma()==Note("C4").chroma())
             SetRowLabelValue(r, wxString::Format("%i",rownote.octave()) );
         else
             SetRowLabelValue(r,wxEmptyString);
@@ -134,9 +132,9 @@ void ChordGrid::paintInput(){
                 paint=true;
         }
         if(paint)
-            SetCellBackgroundColour(r,0,selColor);
+            SetCellBackgroundColour(r,0,parent->s.selColor);
         else
-            SetCellBackgroundColour(r,0,unselColor);
+            SetCellBackgroundColour(r,0,parent->s.unselColor);
     }
 }
 
@@ -150,19 +148,18 @@ void ChordGrid::paintCol(int c){
         wxString text = "";
         if(chord.chromaList[k])
             text = Note(k).toString(false,parent->s.accent);
-        //for(int r=(12-k)%12; r<GetNumberRows(); r+=12){
         for(int r=(12-k+topNote.chroma())%12; r<GetNumberRows(); r+=12){
             SetCellValue(r,c,text);
-            SetCellBackgroundColour(r,c,unselColor);
+            SetCellBackgroundColour(r,c,parent->s.unselColor);
         }
     }
     for(int k=0; k<int(chord.notes.size()); k++){ // paint played cells green
         Note n = chord.notes[k];
         int r = topNote - n;
         if(n==chord.root)
-            SetCellBackgroundColour(r,c,rootColor);
+            SetCellBackgroundColour(r,c,parent->s.rootColor);
         else
-            SetCellBackgroundColour(r,c,selColor);
+            SetCellBackgroundColour(r,c,parent->s.selColor);
     }
 }
 
@@ -200,7 +197,7 @@ void ChordGrid::ToggleCell(wxGridEvent& evt){
 
     wxColor cc = GetCellBackgroundColour(r,c);
 
-    if(cc==selColor || cc==rootColor){
+    if(cc==parent->s.selColor || cc==parent->s.rootColor){
         if(c==0){
             input.removeNote(rownote);
             paintInput();
@@ -210,7 +207,7 @@ void ChordGrid::ToggleCell(wxGridEvent& evt){
             paintCol(c);
         }
     }
-    else if(cc==unselColor && !GetCellValue(r,c).IsEmpty() ){
+    else if(cc==parent->s.unselColor && !GetCellValue(r,c).IsEmpty() ){
         if(c==0){
             input.insertNote(rownote);
             paintInput();
@@ -268,7 +265,6 @@ SequenceGrid::SequenceGrid(wxGLFrame *parnt, wxWindowID id, const wxPoint &pos, 
     Bind(wxEVT_GRID_CELL_RIGHT_DCLICK, &SequenceGrid::ToggleCell, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_CLICK, &SequenceGrid::ColumnRightClick, this);
     Bind(wxEVT_GRID_LABEL_RIGHT_DCLICK, &SequenceGrid::ColumnRightClick, this);
-    //Bind(wxEVT_PAINT, &SequenceGrid::paintSkip, this);
 }
 SequenceGrid::~SequenceGrid(){ }
 
@@ -364,6 +360,13 @@ void FilterGrid::applyFilter(){
 
     clearChords();
 
+
+    /*  The old loop:
+    for(int i=CHORD_M; i!=CHORD_UNK; i++){
+        for(int j=-6; j<6; j++){ // choose j'th note as root. Does it find all the others?
+    }}
+    */
+
     if(input.notes.size()>0){
         int i0 = CHORD_M;
         int j0 = -6;
@@ -433,12 +436,6 @@ void FilterGrid::applyFilter(){
         }
     }
 
-    /*  The old loop:
-    for(int i=CHORD_M; i!=CHORD_UNK; i++){
-        for(int j=-6; j<6; j++){ // choose j'th note as root. Does it find all the others?
-    }}
-    */
-
     AppendCols(chordList.size());
 
     // Not calling paintCol(c) iteratively here because re-painting empty cells causes noticeable delay for many chords (single input case)
@@ -461,9 +458,9 @@ void FilterGrid::applyFilter(){
             Note n = chord.notes[k];
             int r = topNote - n;
             if(n==chord.root)
-                SetCellBackgroundColour(r,c,rootColor);
+                SetCellBackgroundColour(r,c,parent->s.rootColor);
             else
-                SetCellBackgroundColour(r,c,selColor);
+                SetCellBackgroundColour(r,c,parent->s.selColor);
         }
     }
 
