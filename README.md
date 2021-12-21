@@ -1,16 +1,14 @@
 # CFS-Chord-Filter-Sequence
-A simple applicaiton for manually identifying chords and constructing chord progressions using the mouse.
+A simple application for manually identifying chords and constructing chord progressions using the mouse.
 I wrote this program for myself as a way to bridge the gap between my basic music theory knowledge and my lack of ear training.
 
-The program has two tables:
-
-The right table corresponds to a list of "all" chords containing the notes highlighted in the input column.
+The program has two tables. The right table corresponds to a list of "all" chords containing the notes highlighted in the input column.
 Each row corresponds to a note and each column corresponds to a different chord.
 The input acts as a filter to narrow down the range of possible chords to look through.
-Green cells are are the notes of the chord that will be played if you click the column heading,
+Highlighted cells are are the notes of the chord that will be played if you click the column heading,
 while cells with text in them that are not highlighted are also in the chord but will not be played.
-The articulation of the chord ("inversion") can be changed from the initial result by selecting or de1selecting notes.
-The darker shade of green corresponds to the root of the chord.
+The articulation of the chord ("inversion") can be changed from the initial result by selecting or deselecting notes.
+The darker shade corresponds to the root of the chord.
 
 The left table corresponds to a sequence of chords that can be added to by copying/pasting chords (e.g. from the right table).
 The sequence can then be saved to a text file (\*.chord) and loaded later from the File menu.
@@ -19,14 +17,16 @@ Controls for both tables are similar:
 - LCLICK:			Play a note or chord
 - RCLICK:			Select/deselect a note, or delete a chord
 - SHIFT+LCLICK:	Copy a chord
-- SHIFT-RCLICK:	Paste a chord (into chord sequence or input column)
-- CTRL-SHIFT-RCLICK: Insert a chord into chord sequence
+- SHIFT+RCLICK:	Paste a chord (into chord sequence or input column)
+- CTRL+SHIFT+RCLICK: Insert a chord into chord sequence
 
 When you play a note or chord, the program uses the currently loaded soundfont to synthesize the sound.
-Notes played ontiue to play until a new note or chord is played (or, if you "play" an empty cell to stop them).
-This behavoir can be changed with the "kill notes on new play" checkbox, which will cause notes to be additive and never turn off.
-You can choose whether all notes in a chord are played simultaneously, or are played in an ascending order with a small delay by moving the "Strum delay" slider.
-You can load a new soundfont with the corresponding button, or choose a different instrument preset with the dropdown menu.
+Notes played contiue to play until a new note or chord is played (or, if you "play" an empty cell to stop them).
+You can choose whether all notes in a chord are played simultaneously, or are played in an ascending/descending order with a small delay by moving the "Strum delay" slider.
+You can load a new soundfont with the "Load Soundfont" button, or choose a different instrument preset with the dropdown menu.
+The program comes with a default soundfont ("Timbres of Heaven" by Don Allen, http://midkar.com/soundfonts/ ) but you can find others to use.
+You can change the default startup values in the config.ini file (e.g. the soundfont loaded on startup, save path, and more).
+
 
 An example use case:
 - Listen to a song whose chords you want to transcribe

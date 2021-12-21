@@ -11,6 +11,7 @@ const long wxGLFrame::ID_buttonLoadSF = wxNewId();
 const long wxGLFrame::ID_choicePreset = wxNewId();
 const long wxGLFrame::ID_checkboxStrumdir = wxNewId();
 const long wxGLFrame::ID_checkboxChordOrder = wxNewId();
+const long wxGLFrame::ID_checkboxKeyOrder = wxNewId();
 const long wxGLFrame::ID_sliderStrum = wxNewId();
 const long wxGLFrame::ID_sliderVel = wxNewId();
 const long wxGLFrame::ID_filterGrid = wxNewId();
@@ -24,6 +25,7 @@ BEGIN_EVENT_TABLE(wxGLFrame, wxFrame)
     EVT_MENU(idMenuSave, wxGLFrame::SaveFile)
     EVT_MENU(idMenuLoad, wxGLFrame::LoadFile)
     EVT_CHECKBOX(wxGLFrame::ID_checkboxChordOrder,wxGLFrame::onChordOrder)
+    EVT_CHECKBOX(wxGLFrame::ID_checkboxKeyOrder,wxGLFrame::onKeyOrder)
     EVT_BUTTON(wxGLFrame::ID_buttonLoadSF,wxGLFrame::OnLoadSFButton)
     EVT_SLIDER(wxGLFrame::ID_sliderVel,wxGLFrame::onSliderVel)
     EVT_CHOICE(wxGLFrame::ID_choicePreset,wxGLFrame::changePreset)
@@ -74,6 +76,11 @@ wxGLFrame::wxGLFrame(wxFrame *frame, const wxString& title)
     controlGrid->Add(textChordOrder,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
     checkboxChordOrder = new wxCheckBox(controlPanel,ID_checkboxChordOrder,"");
     controlGrid->Add(checkboxChordOrder,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
+
+    wxStaticText* textKeyOrder = new wxStaticText(controlPanel,-1,"Order chords by notes out of key");
+    controlGrid->Add(textKeyOrder,wxGBPosition(cgCntr,0),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL,borderSize);
+    checkboxKeyOrder = new wxCheckBox(controlPanel,ID_checkboxKeyOrder,""); checkboxKeyOrder->SetValue(true);
+    controlGrid->Add(checkboxKeyOrder,wxGBPosition(cgCntr++,1),wxGBSpan(1,1),wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT,borderSize);
 
     // Information output
     wxStaticBoxSizer* infoBox = new wxStaticBoxSizer(wxVERTICAL,controlPanel,"Status");
@@ -186,6 +193,11 @@ void wxGLFrame::onKeyDown(wxKeyEvent& event){
 
 void wxGLFrame::onChordOrder(wxCommandEvent& event){
     s.chordOrder = checkboxChordOrder->IsChecked();
+    filterGrid->applyFilter();
+}
+
+void wxGLFrame::onKeyOrder(wxCommandEvent& event){
+    s.keyOrder = checkboxKeyOrder->IsChecked();
     filterGrid->applyFilter();
 }
 

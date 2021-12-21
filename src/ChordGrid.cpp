@@ -117,6 +117,8 @@ void ChordGrid::mouseMUp(wxMouseEvent& event){
 
 void ChordGrid::paintInput(){
     SetColLabelValue(0,input.label);
+    input.resetChroma(); // reset chroma list because any note can be toggled on and off
+
     for(int r=0; r<NNotes; r++){
         Note rownote = topNote-r;
         if(rownote.chroma()==Note("C4").chroma())
@@ -125,7 +127,7 @@ void ChordGrid::paintInput(){
             SetRowLabelValue(r,wxEmptyString);
         SetCellValue(r,0,rownote.toString(false,parent->s.accent));
 
-        // determine if note is to be painted green
+        // determine if note is to be highlighted
         bool paint = false;
         for(size_t i=0;i<input.notes.size();i++){
             if(input.notes[i] == rownote)
@@ -153,7 +155,7 @@ void ChordGrid::paintCol(int c){
             SetCellBackgroundColour(r,c,parent->s.unselColor);
         }
     }
-    for(int k=0; k<int(chord.notes.size()); k++){ // paint played cells green
+    for(int k=0; k<int(chord.notes.size()); k++){ // highlight played cells
         Note n = chord.notes[k];
         int r = topNote - n;
         if(n==chord.root)
@@ -307,6 +309,10 @@ void SequenceGrid::ColumnRightClick(wxGridEvent& evt){
     }
 }
 
+//;void SequenceGrid::Refilter(wxGridEvent& evt){
+//    sibling->applyFilter();
+//}
+
 
 
 
@@ -433,6 +439,25 @@ void FilterGrid::applyFilter(){
                         break;
                 }
             }
+        }
+
+        // Optionally: re-order further by how many out-of-key notes there are (key = input of sequence grid)
+        if(sibling->input.notes.size()>0 && parent->s.keyOrder){
+            std::vector<size_t> keyorder; keyorder.reserve(chordList.size());
+            for(int c=0;c<12;c++){
+                for(size_t k=0; k<chordList.size(); k++){
+                    int Noutofkey = 0;                     // Get number of out-of-key notes
+                    for(j=0;j<12;j++){
+                        if(!sibling->input.chromaList[j] && chordList[k].chromaList[j])
+                            Noutofkey++;
+                    }
+                    if(Noutofkey == c){
+                        keyorder.push_back(k);
+                    }
+                }
+            }
+            //reorder_destructive(keyorder.begin(),keyorder.end(),chordList.begin());
+            reorder(chordList,keyorder);
         }
     }
 

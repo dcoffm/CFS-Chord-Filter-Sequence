@@ -42,6 +42,7 @@ struct ProgramSettings{
     int defaultTab = 3;
     char accent = '#';
     int chordOrder = 0;
+    int keyOrder = 1;
     Note topNote = wxString("C 8");
     Note botNote = wxString("C 0");
     //wxColor selColor = wxColor(34,177,76);
@@ -96,6 +97,7 @@ class wxGLFrame: public wxFrame
         void OnLoadSFButton(wxCommandEvent& event);
         void onSliderVel(wxCommandEvent& event);
         void onChordOrder(wxCommandEvent& event);
+        void onKeyOrder(wxCommandEvent& event);
         void LoadSF(wxString filepath);
         void changePreset(wxCommandEvent& event);
         void onKeyDown(wxKeyEvent& event);
@@ -113,6 +115,7 @@ class wxGLFrame: public wxFrame
         static const long ID_notebook;
         static const long ID_sliderVel;
         static const long ID_checkboxChordOrder;
+        static const long ID_checkboxKeyOrder;
 
         // Declarations for widgets
         wxPanel*        controlPanel;
@@ -122,6 +125,7 @@ class wxGLFrame: public wxFrame
         wxStaticText*   textSF;
         wxCheckBox*     checkboxStrumdir;
         wxCheckBox*     checkboxChordOrder;
+        wxCheckBox*     checkboxKeyOrder;
         wxSlider*       sliderStrum;
         wxSlider*       sliderVel;
         wxStaticBoxSizer* infoBox;

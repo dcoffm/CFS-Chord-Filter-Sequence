@@ -16,11 +16,12 @@ enum ChordType{
     CHORD_m,
     CHORD_dim,
     CHORD_aug,
-    CHORD_sus,
+    CHORD_sus4,
     CHORD_sus2,
-    CHORD_sus3,
+    CHORD_sus24,
     CHORD_6,
     CHORD_69,
+    CHORD_sus69,
     CHORD_M7,
     CHORD_M75,
     CHORD_M9,
@@ -35,7 +36,7 @@ enum ChordType{
     CHORD_s9,
     CHORD_13,
     CHORD_m6,
-    CHORD_m65,
+    //CHORD_m65,
     CHORD_m7,
     CHORD_m75,
     CHORD_m7b5,
@@ -43,30 +44,31 @@ enum ChordType{
     CHORD_m9,
     CHORD_mad9,
     CHORD_mb9,
+    CHORD_aug9,
     CHORD_mM7,
     CHORD_dim7,
     CHORD_dim5,
     CHORD_5,
     CHORD_3,
-    CHORD_aug9,
     CHORD_UNK
 };
 static const wxString chordNames[] = {
     [CHORD_M] = "M",
     [CHORD_m] = "m",
-    [CHORD_dim] = "dim",
+    [CHORD_dim] = "o",
     [CHORD_aug] = "+",
-    [CHORD_sus] = "sus",
+    [CHORD_sus4] = "sus4",
     [CHORD_sus2] = "sus2",
-    [CHORD_sus3] = "sus3",
+    [CHORD_sus24] = "sus24",
     [CHORD_6] = "6",
     [CHORD_69] = "6/9",
+    [CHORD_sus69]="sus6/9",
     [CHORD_M7] = "M7",
     [CHORD_M75] = "M75",
     [CHORD_M9] = "M9",
     [CHORD_add9] = "add9",
     [CHORD_7] = "7",
-    [CHORD_7sus4] = "7sus4",
+    [CHORD_7sus4] = "7sus",
     [CHORD_75] = "75",
     [CHORD_7b5] = "7b5",
     [CHORD_7s5] = "7#5",
@@ -75,20 +77,21 @@ static const wxString chordNames[] = {
     [CHORD_s9] = "#9",
     [CHORD_13] = "13",
     [CHORD_m6] = "m6",
-    [CHORD_m65] = "m65",
+    //[CHORD_m65] = "m65",
     [CHORD_m7] = "m7",
     [CHORD_m75] = "m75",
-    [CHORD_m7b5] = "m7b5",
+    //[CHORD_m7b5] = "m7b5",
+    [CHORD_m7b5] = "ø7",
     [CHORD_m7s5] = "m7s5",
     [CHORD_m9] = "m9",
     [CHORD_mad9] = "mad9",
     [CHORD_mb9] = "mb9",
+    [CHORD_aug9] = "+9",
     [CHORD_mM7] = "mM7",
-    [CHORD_dim7] = "dim7",
-    [CHORD_dim5] = "dim5",
+    [CHORD_dim7] = "o7",
+    [CHORD_dim5] = "o5",
     [CHORD_5] = "5",
     [CHORD_3] = "3",
-    [CHORD_aug9] = "+9",
     [CHORD_UNK] = ""
 };
 
@@ -97,11 +100,12 @@ static const int chordSteps[][5] = {
     [CHORD_m]       = { 0, 3, 7, 0, 0},
     [CHORD_dim]     = { 0, 3, 6, 0, 0},
     [CHORD_aug]     = { 0, 4, 8, 0, 0},
-    [CHORD_sus]     = { 0, 5, 7, 0, 0},
+    [CHORD_sus4]     = { 0, 5, 7, 0, 0},
     [CHORD_sus2]    = { 0, 2, 7, 0, 0},
-    [CHORD_sus3]    = { 0, 5, 7,14, 0},
+    [CHORD_sus24]    = { 0, 5, 7,14, 0},
     [CHORD_6]       = { 0, 4, 0, 9, 0},
-    [CHORD_69]      = { 0, 4, 0, 9,14},
+    [CHORD_69]      = { 0, 4, 7, 9,14},
+    [CHORD_sus69]   = { 0, 5, 7, 9,14},
     [CHORD_M7]      = { 0, 4, 0,11, 0},
     [CHORD_M75]     = { 0, 4, 7,11, 0},
     [CHORD_M9]      = { 0, 4, 7,11,14},
@@ -116,7 +120,7 @@ static const int chordSteps[][5] = {
     [CHORD_s9]      = { 0, 4, 0,10,15},
     [CHORD_13]      = { 0, 4, 9,10, 0},
     [CHORD_m6]      = { 0, 3, 0, 9, 0},
-    [CHORD_m65]     = { 0, 3, 7, 9, 0},
+    //[CHORD_m65]     = { 0, 3, 7, 9, 0},
     [CHORD_m7]      = { 0, 3, 0,10, 0},
     [CHORD_m75]     = { 0, 3, 7,10, 0},
     [CHORD_m7b5]    = { 0, 3, 6,10, 0},
@@ -124,12 +128,12 @@ static const int chordSteps[][5] = {
     [CHORD_m9]      = { 0, 3, 0,10,14},
     [CHORD_mad9]    = { 0, 3, 7, 0,14},
     [CHORD_mb9]     = { 0, 3, 0,10,13},
+    [CHORD_aug9]    = { 0, 4, 8,15, 0},
     [CHORD_mM7]     = { 0, 3, 7,11, 0},
     [CHORD_dim7]    = { 0, 3, 6, 9, 0},
     [CHORD_dim5]    = { 0, 0, 6, 0, 0},
     [CHORD_5]       = { 0, 0, 7, 0, 0},
     [CHORD_3]       = { 0, 4, 0, 0, 0},
-    [CHORD_aug9]    = { 0, 4, 8,15, 0},
     [CHORD_UNK]     = { 0, 0, 0, 0, 0}
 };
 
@@ -325,5 +329,31 @@ struct Chorde{
             }
         }
     }
+    void resetChroma(){
+        for(size_t i=0;i<12;i++){
+            chromaList[i] = false;
+        }
+        for(size_t i=0;i<notes.size();i++){
+            chromaList[notes[i].chroma()] = true;
+        }
+    }
 };
+
+// Utility function to reorder a vector by a list of indices
+template<typename T>
+void reorder(std::vector<T>& vec, std::vector<size_t> vOrder)
+{
+    assert(vec.size() == vOrder.size());
+    for( size_t vv = 0; vv < vec.size() - 1; ++vv ){
+            if (vOrder[vv] == vv)
+                continue;
+            size_t oo;
+            for(oo = vv + 1; oo < vOrder.size(); ++oo){
+                if (vOrder[oo] == vv)
+                    break;
+            }
+            std::swap( vec[vv], vec[vOrder[vv]] );
+            std::swap( vOrder[vv], vOrder[oo] );
+    }
+}
 #endif

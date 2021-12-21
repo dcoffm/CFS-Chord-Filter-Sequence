@@ -29,12 +29,12 @@ public:
     void ColumnLeftClick(wxGridEvent& evt);
     void appendChord(Chorde& chord);
     ChordGrid* sibling;
+    Chorde input;
 
 protected:
     wxGLFrame* parent;
     wxWindow* thisWin;
 
-    Chorde input;
     std::vector<Chorde> chordList;
 
     Note topNote = wxString("C 8");
